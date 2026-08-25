@@ -92,7 +92,7 @@ password "<pw>"` over SSH.
 
 ## 5. Looking like a print — brightness that follows the room
 
-`js/ambient.js` (kiosk only) polls `/ambient.json` and eases a black overlay (plus a faint warm
+`js/frame/ambient.js` (kiosk only) polls `/ambient.json` and eases a black overlay (plus a faint warm
 tint) from full brightness at ≥ 300 lx down to 30 % at ≤ 3 lx (`config.ambient`: `luxDark`,
 `luxBright`, `minBrightness`, `warmth`). This removes the "glowing screen" look at night. Without a
 sensor the frame simply stays at full brightness.

@@ -1,4 +1,4 @@
-# Aquatic Park — swim conditions
+# SF Bay Swims — swim conditions for Aquatic Park and the Bay
 
 An aerial view of Aquatic Park Cove (San Francisco) showing the tidal current as drifting streaks, the water
 temperature, and five swim routes. For each route the rail shows the distance and the estimated time *under the
@@ -10,6 +10,8 @@ A second view (`v`), **San Francisco Bay**, zooms out to the Golden Gate → Bay
 Escape from Alcatraz, the Golden Gate, Golden Gate → Aquatic Park, Bridge to Bridge both ways, Round Angel Island,
 Angel Island → Aquatic Park — over a current field blended from 43 NOAA stations. When a swim can't be held against
 the current the rail says so, names the next and best start in the coming 48 h, and the swimmer is swept away.
+
+This is becoming two products on one engine — a **Planner** (this page) and a wall-hung **Frame** — see [SPEC.md](SPEC.md).
 
 Made as a wedding gift for Jean Marc. `ARCHITECTURE.md` walks through every file.
 
@@ -44,7 +46,9 @@ wake lock, nightly reload, remembers the view, drifts back to *current* after 10
 ## Layout
 
 ```
-index.html  css/style.css  js/            the app (20 ES modules, no dependencies)
+index.html  js/main.js  css/app.css       the app's page, entry and UI sheet
+js/engine/  css/engine.css                the shared engine: boot, runtime, worlds, fields, physics, swimmer, streaks, data (23 modules)
+js/planner/ hud.js keys.js                the HUD, rail and keys        js/frame/ kiosk.js ambient.js   kiosk behaviour, room-light dimming
 data/tides-2026.json                      the year's tide extremes (shared)
 data/currents-2026.json                   the cove's outside current, SFB1204, 6-min
 data/watertemp-climatology.json           day-of-year water temperature (fallback)
@@ -57,7 +61,7 @@ tools/              the data-prep scripts (Python 3, stdlib + Pillow + numpy) an
 
 Hand-authored, not generated: `index.json`, each `world.json`, `landmarks.json`, `routes.json`, and the cove's
 `photo.json` (the cove ships its aerial untouched, so it points at `source.jpg`). Every constant lives in
-`js/config.js`; a world's `world.json` → `config` patches it (the Bay's tempo, particles, swimmer size…).
+`js/engine/config.js`; a world's `world.json` → `config` patches it (the Bay's tempo, particles, swimmer size…).
 
 ## Editing routes
 

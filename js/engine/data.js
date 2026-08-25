@@ -1,6 +1,7 @@
 // Live data: NOAA CO-OPS (tides, currents), USGS (water temperature), NWS / Open-Meteo (wind) — all browser-side,
 // key-less and CORS-enabled — plus Pacific-time helpers, the localStorage cache and the offline bundles.
 import { CONFIG } from './config.js';
+import { dataUrl } from './paths.js';
 
 export const TZ = 'America/Los_Angeles';
 const COOPS = 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter';
@@ -102,7 +103,7 @@ export async function fetchWind() {
 
 // ---- offline bundles (data/*.json) ----
 export async function loadBundle(name) {
-  try { const r = await fetch(`data/${name}`, { cache: 'no-cache' }); return r.ok ? await r.json() : null; } catch { return null; }
+  try { const r = await fetch(dataUrl(name), { cache: 'no-cache' }); return r.ok ? await r.json() : null; } catch { return null; }
 }
 export function climatologyTemp(clim, t) {
   if (!clim?.doyMeanF) return null;

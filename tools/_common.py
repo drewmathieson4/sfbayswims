@@ -2,7 +2,7 @@
 import json, urllib.request, urllib.parse, datetime, zoneinfo, time, pathlib
 
 TZ = zoneinfo.ZoneInfo("America/Los_Angeles")
-UA = "aquatic-park-swim-map/1.0 (data prep)"
+UA = "sfbayswims/1.0 (data prep)"
 COOPS = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter"
 OVERPASS = "https://overpass-api.de/api/interpreter"
 

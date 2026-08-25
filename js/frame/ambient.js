@@ -2,7 +2,7 @@
 // /run/aquatic/ambient.json; tools/serve.py serves it as /ambient.json. We map lux → a brightness level
 // (log scale between luxDark and luxBright) and ease a black overlay (+ a faint warm tint) toward it, so
 // the frame dims like a print as the room darkens. If the sensor goes quiet we return to full brightness.
-import { CONFIG } from './config.js';
+import { CONFIG } from '../engine/config.js';
 
 export function startAmbient() {
   const c = CONFIG.ambient; if (!c?.enabled) return;
