@@ -157,7 +157,12 @@ one per cycle (the fastest within ±half a cycle), filtered (daylight via `sun.j
 for the slack relation; memoised. **`draw.js`** — draw a swim: taps on the water become waypoints (snapped to a landmark
 within `draw.snapM`), markers drag, and every change rebuilds a `custom` route through `buildRoutes` (the built world
 exposes `landmarks`, `landmarksJson`, `proj`, `geom`) with `routeCrossesLand` as the warning; `wp=` in the URL and saved
-plans carry it.
+plans carry it. **`report.js`** — the bug report (plan link, data + health + ages, horizon, browser, last errors) to copy,
+file as a GitHub issue, or email.
+
+**`js/engine/health.js`** — the last errors (window errors, unhandled rejections, reported ones) for the bug report
+and the Planner's banner; `state.js` isolates listeners through it. The runtime records per-source data health
+(`state.data.health`), keeps the page's hint line (`setHint`) and knows the prediction `horizon()`.
 
 **`js/engine/format.js`** · **`show.js`** · **`input.js`** · **`sun.js`** — number formatting in the chosen units
 (`setUnits`: yards/miles or metres/km, pace per 100 yd or m, °F/°C); the switches (`state.show` → html classes); when a

@@ -5,6 +5,7 @@ import { state, set, on, bumpData, displayTime, physicsTime } from './state.js';
 import * as data from './data.js';
 import { TideSeries } from './tide.js';
 import { createDebug } from './debug.js';
+import { reportError } from './health.js';
 import { CurrentSeries } from './current.js';
 import { createParticles } from './particles.js';
 import { integrateRoute, scanWindows } from './swim.js';
@@ -36,36 +37,39 @@ export async function start({ canvas, mapEl, params, onResize, live, hintEl = nu
   if (tide) bumpData({});
 
   let failures = 0, lastOk = Date.now();
-  const noteOk = () => { failures = 0; lastOk = Date.now(); if (hintEl) hintEl.textContent = ''; };
-  const noteFail = () => { failures++; };
+  const hints = new Map();                                              // small notices for the page's hint line (offline, predictions ending…)
+  const setHint = (k, text) => { hints.set(k, text || ''); if (hintEl) hintEl.textContent = [...hints.values()].filter(Boolean).join(' · '); };
+  const mark = (k, v) => { state.data.health[k] = { t: Date.now(), ...v }; };   // per-source health for the HUD's staleness tags and bug reports
+  const noteOk = k => { failures = 0; lastOk = Date.now(); setHint('offline', ''); if (k) mark(k, { ok: true }); };
+  const noteFail = (k, e) => { failures++; if (k) mark(k, { ok: false, err: e?.message || String(e) }); };
   async function refreshTides() {
     const now = Date.now(), c = data.cacheGet('tides');
-    if (c && now - (c.fetchedAt || 0) < CONFIG.refresh.tideH * H && tide?.covers(now - 12 * H, now + 30 * H)) return;
-    try { const r = await data.fetchTides({ t0: now - 36 * H, t1: now + 36 * H }); data.cachePut('tides', r); tide = TideSeries.merge(tide, new TideSeries(r)); bumpData({}); noteOk(); }
-    catch (e) { console.warn('tides', e.message); noteFail(); }
+    if (c && now - (c.fetchedAt || 0) < CONFIG.refresh.tideH * H && tide?.covers(now - 12 * H, now + 30 * H)) { mark('tides', { ok: true, source: 'cache', t: c.fetchedAt }); return; }
+    try { const r = await data.fetchTides({ t0: now - 36 * H, t1: now + 36 * H }); data.cachePut('tides', r); tide = TideSeries.merge(tide, new TideSeries(r)); bumpData({}); noteOk('tides'); }
+    catch (e) { console.warn('tides', e.message); noteFail('tides', e); }
   }
   async function refreshWaterTemp() {
-    try { const w = await data.fetchWaterTemp(); bumpData({ waterTemp: w }); state.data.sources.waterTemp = w.source; noteOk(); }
-    catch (e) { console.warn(e.message); noteFail(); await climatologyFallback(); }
+    try { const w = await data.fetchWaterTemp(); bumpData({ waterTemp: w }); state.data.sources.waterTemp = w.source; noteOk('waterTemp'); mark('waterTemp', { ok: true, source: w.source }); }
+    catch (e) { console.warn(e.message); noteFail('waterTemp', e); await climatologyFallback(); }
   }
   async function climatologyFallback() {
     const clim = await data.loadBundle('watertemp-climatology.json'), v = data.climatologyTemp(clim, Date.now());
     if (v != null) bumpData({ waterTemp: { t: Date.now(), degF: v, approx: true, source: 'climatology' } });
   }
-  async function refreshWind() { try { const w = await data.fetchWind(); bumpData({ wind: w }); noteOk(); } catch (e) { console.warn('wind', e.message); noteFail(); } }
+  async function refreshWind() { try { const w = await data.fetchWind(); bumpData({ wind: w }); noteOk('wind'); mark('wind', { ok: true, source: w.source }); } catch (e) { console.warn('wind', e.message); noteFail('wind', e); } }
   async function refreshCurrents() {
     const now = Date.now(), c = data.cacheGet('currents'); let series = c;
     if (!c || now - (c.fetchedAt || 0) > CONFIG.refresh.currentsH * H || !(c.samples?.length) || c.samples[c.samples.length - 1].t < now + 24 * H) {
-      try { series = await data.fetchCurrents({ t0: now - 36 * H, t1: now + 36 * H }); data.cachePut('currents', series); noteOk(); } catch (e) { console.warn('currents', e.message); noteFail(); }
+      try { series = await data.fetchCurrents({ t0: now - 36 * H, t1: now + 36 * H }); data.cachePut('currents', series); noteOk('currents'); } catch (e) { console.warn('currents', e.message); noteFail('currents', e); }
     }
-    if (series?.samples?.length) { currents = new CurrentSeries(series); bumpData({}); }
+    if (series?.samples?.length) { currents = new CurrentSeries(series); bumpData({}); if (series === c) mark('currents', { ok: true, source: 'cache', t: c.fetchedAt }); }
   }
   if (!offline) {
     refreshTides(); refreshWaterTemp(); refreshWind(); refreshCurrents();
     setInterval(refreshTides, 30 * 60000); setInterval(refreshCurrents, 30 * 60000);
     setInterval(refreshWaterTemp, CONFIG.refresh.waterTempMin * 60000); setInterval(refreshWind, CONFIG.refresh.windMin * 60000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) { refreshWaterTemp(); refreshWind(); } });
-    if (state.kiosk) setInterval(() => { const h = CONFIG.offlineHint; if (hintEl) hintEl.textContent = (failures >= 2 && Date.now() - lastOk > h.afterS * 1000) ? h.text : ''; }, 30000);
+    if (state.kiosk) setInterval(() => { const h = CONFIG.offlineHint; setHint('offline', (failures >= 2 && Date.now() - lastOk > h.afterS * 1000) ? h.text : ''); }, 30000);
   } else await climatologyFallback();
 
   // ---- per-world: particles + swimmer ----
@@ -87,7 +91,7 @@ export async function start({ canvas, mapEl, params, onResize, live, hintEl = nu
   // ---- physics: every route is re-integrated when the time, pace, route or data change (debounced 120 ms) ----
   let dirty = true, lastMinute = -1, recomputeTimer = null, scanTimer = null, scanMemo = new Map();
   const markDirty = () => { dirty = true; clearTimeout(recomputeTimer); recomputeTimer = setTimeout(() => { recomputeTimer = null; if (dirty) recomputeSafe(); }, 120); };
-  const recomputeSafe = () => { try { recompute(); } catch (e) { console.error('recompute:', e.message, e.stack); } };
+  const recomputeSafe = () => { try { recompute(); } catch (e) { console.error('recompute:', e.message, e.stack); reportError(e.message, 'recompute'); } };
   on('selectedTime', markDirty); on('paceMps', markDirty); on('data', markDirty); on('routeId', markDirty);
   on('icon', () => swimmer?.rebuild());
   const minuteTick = () => { if (state.selectedTime != null || state.swimming) return; const m = Math.floor(state.now / 60000); if (m !== lastMinute) { lastMinute = m; markDirty(); } };
@@ -134,7 +138,7 @@ export async function start({ canvas, mapEl, params, onResize, live, hintEl = nu
     const maxFps = CONFIG.anim.maxFps || 0;
     if (maxFps > 0) { acc += dt; if (acc < 1 / maxFps) { requestAnimationFrame(tick); return; } }
     const step = maxFps > 0 ? acc : dt; acc = 0;
-    try { tickBody(step); } catch (e) { if (loopErrors++ < 3) console.error('loop error:', e.message, e.stack); }
+    try { tickBody(step); } catch (e) { if (loopErrors++ < 3) { console.error('loop error:', e.message, e.stack); reportError(e.message, 'loop'); } }
     requestAnimationFrame(tick);
   }
   function tickBody(dt) {
@@ -157,5 +161,7 @@ export async function start({ canvas, mapEl, params, onResize, live, hintEl = nu
     finally { frozen = true; document.documentElement.classList.add('snapshot-ready'); }
   }
 
-  return { refs, mount, unmount, afterMount, recompute: recomputeSafe, stepFrames, onTick: fn => { tickFns.push(fn); }, get particles() { return particles; }, get swimmer() { return swimmer; }, get field() { return world?.field; } };
+  /** When the predictions run out: the earliest end of the bundled currents and the tide extremes (ms), or Infinity. */
+  const horizon = () => Math.min(world?.horizon ?? Infinity, tide?.t1 ?? Infinity);
+  return { refs, mount, unmount, afterMount, recompute: recomputeSafe, stepFrames, onTick: fn => { tickFns.push(fn); }, setHint, horizon, get particles() { return particles; }, get swimmer() { return swimmer; }, get field() { return world?.field; } };
 }

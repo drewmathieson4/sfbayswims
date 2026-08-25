@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="css/planner.css">
 </head>
 <body>
+<div id="banner" hidden><span id="banner-text"></span><button type="button" id="banner-report">report</button><button type="button" id="banner-reload">reload</button><button type="button" id="banner-close">×</button></div>
 <main id="map">
   <svg id="photo" xmlns="http://www.w3.org/2000/svg"><image id="photo-img" preserveAspectRatio="none"/></svg>
   <canvas id="particles"></canvas>
@@ -61,6 +62,7 @@
         <div class="r"><span class="k">strongest current</span><span class="v" id="route-max">…</span></div>
         <div class="r"><span class="k">daylight</span><span class="v" id="route-sun">…</span></div>
         <div class="note" id="route-note"></div>
+        <div class="note" id="route-horizon"></div>
         <div class="r win" id="route-best"></div>
         <div class="r win" id="route-next"></div>
         <div class="r"><span class="k" id="elapsed-k">elapsed</span><span class="v" id="elapsed">0:00</span></div>
@@ -81,10 +83,10 @@
   </div>
 </aside>
 <div id="timeline"><svg id="tl" xmlns="http://www.w3.org/2000/svg"></svg></div>
-<footer id="foot">predictions, not measurements · <a href="#" id="about">about the numbers</a></footer>
-<div id="sheet" hidden>
+<footer id="foot">predictions, not measurements · <a href="#" id="about-link">about the numbers</a></footer>
+<div id="sheet" class="sheet" hidden>
   <div class="card">
-    <div class="head"><h2>Settings</h2><button type="button" id="sheet-close">close</button></div>
+    <div class="head"><h2>Settings &amp; controls</h2><button type="button" class="close" data-close="sheet">close</button></div>
     <div class="grid">
       <span>distance</span><div class="seg" id="u-dist"><button type="button" data-v="yd">yards</button><button type="button" data-v="m">metres</button></div>
       <span>temperature</span><div class="seg" id="u-temp"><button type="button" data-v="F">°F</button><button type="button" data-v="C">°C</button></div>
@@ -98,13 +100,22 @@
       <span>n</span><span>back to now</span>
       <span>space</span><span>preview · pause</span>
       <span>s · c</span><span>streaks · current arrows</span>
+      <span>l</span><span>the legs table</span>
       <span>− +</span><span>pace ±1 s</span>
       <span>v</span><span>next spot</span>
       <span>?</span><span>this sheet</span>
-      <span>l</span><span>the legs table</span>
       <span>tap · drag</span><span>while drawing: add a point · move a marker</span>
     </div>
-    <h3>About the numbers</h3>
+    <h3>Report a bug</h3>
+    <p>Say what happened; the report adds your plan, the data and its age, and the last errors — nothing personal.</p>
+    <textarea id="report-notes" rows="3" placeholder="what happened, and what you expected"></textarea>
+    <div class="row"><button type="button" id="report-copy">copy report</button><button type="button" id="report-issue">open an issue on GitHub</button><button type="button" id="report-email" hidden>email it</button></div>
+    <div class="row foot"><a href="#" id="to-about">about the numbers</a><button type="button" id="reset">reset settings</button></div>
+  </div>
+</div>
+<div id="about" class="sheet" hidden>
+  <div class="card">
+    <div class="head"><h2>About the numbers</h2><button type="button" class="close" data-close="about">close</button></div>
     <p>Swim times are <strong>predictions, not measurements</strong>. The swimmer holds each leg's line at your pace against
     NOAA's predicted current — crabbing, sprinting to 1:00 /100 m from a short reserve where the line can't be held, and
     counted as swept when even that fails. Wind is shown but not in the physics; chop, fog and shipping aren't either.</p>
@@ -112,11 +123,14 @@
     a shelter factor, the tidal fill and drain through the openings, an eddy inside the Opening. <strong>San Francisco
     Bay</strong>: NOAA's predictions for 43 current stations blended by distance; between stations it's a smooth blend,
     not hydrodynamics. The current shown top-right is the one honest number — the Opening (cove) or the Alcatraz station
-    (Bay). <span class="approx">≈</span> marks a station running on its bundled prediction rather than live data.</p>
+    (Bay). <span class="approx">≈</span> marks a reading from a bundled prediction or a climatology rather than live data;
+    a live reading older than a few hours shows its age.</p>
+    <h3>Data right now</h3>
     <p id="sources"></p>
+    <p id="horizon"></p>
     <p>Swim with a pilot where your club requires one; the Bay swims cross shipping lanes. You are responsible for your own
     swim.</p>
-    <div class="row"><button type="button" id="reset">reset settings</button></div>
+    <div class="row foot"><a href="#" id="to-settings">settings &amp; controls</a><a href="#" id="to-report">report a bug</a></div>
   </div>
 </div>
 <script type="module" src="js/planner/main.js"></script>

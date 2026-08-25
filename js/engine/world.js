@@ -73,19 +73,21 @@ export function buildWorld(data, env, refs) {
       const pad = CONFIG.view.routePadM;
       extent = { x0: extent.x0 - pad, x1: extent.x1 + pad, y0: extent.y0 - pad, y1: extent.y1 + pad };
     }
-    let field, stations = null;
+    let field, stations = null, horizon = Infinity;                 // when the bundled current predictions run out
     if (world.field.type === 'stations') {
       const seriesById = new Map(), a = data.currentsThis?.stations || {}, n = data.currentsNext?.stations || {};
       for (const id of new Set([...Object.keys(a), ...Object.keys(n)])) seriesById.set(id, CurrentSeries.concat([a[id], n[id]], id));
+      for (const s of seriesById.values()) if (s.t?.length) horizon = Math.min(horizon, s.t1);
       stations = (data.stations?.stations || []).map(s => ({ ...s, ...proj.project(s.lat, s.lon) }));
       field = createStationField({ geometry: geom, stations, seriesById, tideRef: refs.tideRef, liveRef: refs.liveCurrentsRef, config: CONFIG, fieldCfg: world.field });
     } else {
       // the cove's outside current: the live NOAA window when it covers t, else the year bundle
       const bundle = (data.currentsThis?.kn || data.currentsNext?.kn) ? CurrentSeries.concat([data.currentsThis, data.currentsNext], CONFIG.stations.currents) : null;
+      if (bundle?.t?.length) horizon = bundle.t1;
       const currentsRef = () => { const live = refs.liveCurrentsRef(); if (live && bundle) return { covers: t => live.covers(t) || bundle.covers(t), at: t => live.covers(t) ? live.at(t) : bundle.at(t) }; return live || bundle; };
       field = createField({ geometry: geom, tideRef: refs.tideRef, currentsRef, config: CONFIG });
     }
-    b = { proj, geom, routes, landmarks, landmarksJson: data.landmarks, extent, field, stations };
+    b = { proj, geom, routes, landmarks, landmarksJson: data.landmarks, extent, field, stations, horizon };
     built.set(data.id, b);
     console.log(`world ${data.id}: grid ${geom.grid.nx}×${geom.grid.ny} @ ${geom.grid.cell.toFixed(1)} m, ${routes.length} routes, ${stations ? stations.length + ' stations' : 'cove field'}, ${Math.round(performance.now() - t0)} ms`);
   }

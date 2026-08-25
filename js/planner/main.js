@@ -15,6 +15,8 @@ import { createStarts } from './starts.js';
 import { bindKeys } from './keys.js';
 import { readPlan, customFromParams } from './share.js';
 import { createDraw } from './draw.js';
+import { bindReport } from './report.js';
+import { onError } from '../engine/health.js';
 
 const params = new URLSearchParams(location.search);
 const DEFAULTS = { units: { dist: 'yd', temp: 'F' }, streaks: true, swimmer: true, arrows: false, colour: true, tideLine: true, swim: { burst: true, reserveS: 60, floorMps: 0.25 } };
@@ -53,6 +55,13 @@ createStarts({ b });
 panel.onSetting(k => { if (k === 'colour') legs.render(); if (k === 'tideLine') timeline.render(); });
 bindKeys({ b, panel });
 panel.onUnits(() => hud.rerender());
+bindReport({ b, getCustom: () => draw.custom });
+const banner = document.getElementById('banner'), bannerText = document.getElementById('banner-text');   // a visible sign of a real error, with a way to report it
+const showBanner = e => { bannerText.textContent = `Something went wrong (${e.where ? e.where + ': ' : ''}${e.msg}). The page may still work; reload if not.`; banner.hidden = false; };
+onError(showBanner);
+document.getElementById('banner-close').onclick = () => { banner.hidden = true; };
+document.getElementById('banner-reload').onclick = () => location.reload();
+document.getElementById('banner-report').onclick = () => { banner.hidden = true; panel.openReport(); };
 applyShow();
 let k = 0;
 b.services.onTick((dt, force) => {                                            // elapsed, speed and the timeline's playhead during a preview
@@ -62,6 +71,7 @@ b.services.onTick((dt, force) => {                                            //
   if (state.swimming) timeline.render();
 });
 await b.activateFirst();
+if (window.APP.startError) showBanner({ msg: window.APP.startError.message, where: 'start' });
 const shared = customFromParams(params); if (shared) draw.load(shared);
 hud.setSpot(b.live.world?.world.title || 'Aquatic Park');
 window.APP.planner = { settings, panel, timeline, legs, draw };

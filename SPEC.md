@@ -288,5 +288,7 @@ Bay-swim start), **China Beach / Lands End** (outside the Gate; strong current, 
   swim over n tide cycles, or a date; daylight / duration / weekend filters; slack relation), daylight row, tide-height
   line, per-swim notes, saved plans; merged.
 - 2026-08-25 — Phase 5 (branch `custom-swims`): draw a swim (tap, snap, drag, undo, shape, name; land warning; in the
-  share link and saved plans; edit an existing swim). Next: compare two starts, the 7-day calendar, lighter Bay bundles,
-  new spots.
+  share link and saved plans; edit an existing swim); merged.
+- 2026-08-25 — Data audit (`DATA.md`): health per source, staleness tags, the prediction horizon in the app and the
+  frame, listener isolation, error banner, report-a-bug, `tools/check_bundles.py`; settings and about split into two
+  sheets. Next: compare two starts, the 7-day calendar, lighter Bay bundles, new spots.
