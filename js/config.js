@@ -50,7 +50,7 @@ export const CONFIG = {
   particles: { perCells: 20, min: 500, max: 1600, speedup: 50, fade: 0.04, lineWidth: 1, maxAgeS: [1.5, 4] },
 
   anim: {
-    speedup: 10, pauseS: 1.0,                           // swim-time seconds per real second; pause at the end of a lap
+    speedup: 10, pauseS: 1.0,                           // swim-time seconds per real second (keys [ ] scale it live); pause at the end of a lap
     maxFps: 0,                                          // 0 = uncapped; ?fps=30 on the frame
     // swept away: the drift lasts sweptRealS real seconds with the clock at sweptTempo× the usual tempo; full opacity
     // until sweptFadeFrom of the way through, then fades. sweptFightS: after the sprint reserve is spent, seconds of
@@ -71,7 +71,7 @@ export const CONFIG = {
 
   photo: { filter: 'brightness(1) contrast(1.2) saturate(1)' },      // CSS filter on the aerial (--photo-filter)
   route: { doneWidth: 1, dotR: 3.5, followOffsetM: 15, keepRightM: 4 },   // dotR = swimmer unit size in metres (the Bay uses 60)
-  swimmer: { icon: 'glyph', size: 1.5, strokeHz: 0.5, armReach: 0.8,     // icon: glyph | dot; drawn in the page's ink colour
+  swimmer: { icon: 'glyph', size: 1.5, strokeHz: 0.5, armReach: 0.8,     // icon: glyph | beacon (white dot + pulse; key i toggles)
     glyph: { head: 0.34, headY: 1.35, shoulder: 0.42, shoulderY: 0.85, hip: 0.22, length: 2.1, armX: 0.7, armW: 1.0 } },  // in units of route.dotR
   trace: { mode: 'comet', tailS: 30, tailSegments: 14, crumbs: true, crumbEveryS: 15 },   // mode: none | comet | ink
   uiScale: 1,

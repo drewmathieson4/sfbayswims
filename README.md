@@ -24,9 +24,11 @@ open http://localhost:8000
 **Controls:** tap / click the map (or `↓` `↑`) — next / previous route · `←` `→` — travel in time: a tap moves
 5 minutes, holding accelerates to a day every few seconds; the top-left corner reads *current* on the live clock,
 otherwise the date and time · `n` / `Esc` — back to current · **`v`** — switch view (each view remembers its
-route) · `space` — pause the swimmer · `a` `s` `u` — swimmer / streaks / UI overlay on or off · `p` — photo mode
-(swimmer and overlay off together) · `-` `+` — pace ±5 s/100 m · `d` — debug overlay (current arrows, stations;
-add `?mask=1` for the water mask). While time-travelling the water temperature is tagged *now* and the wind is
+route) · `space` — pause the swimmer · `i` — swimmer glyph ↔ white dot with a beacon · `[` `]` — animation slower /
+faster (the multiplier shows next to *elapsed*) · `-` `+` — pace ±1 s per 100 yd · `a` `s` `u` — swimmer / streaks /
+UI overlay on or off · `p` — photo mode (swimmer and overlay off together) · `d` — debug overlay (current arrows,
+stations; add `?mask=1` for the water mask). The rail's **speed** row is the swimmer's ground speed right now as time
+per 100 yd, whole seconds — it changes with the current along the route. While time-travelling the water temperature is tagged *now* and the wind is
 hidden (`hud` in config).
 
 **URL flags:** `?world=bay` · `?route=cw` · `?t=2026-09-01T14:00-07:00` (freeze the time) · `?kiosk=1` (no cursor,

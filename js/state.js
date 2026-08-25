@@ -12,6 +12,8 @@ export const state = {
   routeByWorld: {},        // each view remembers its route across `v`
   windows: null,           // { next, best } from the 48-h feasibility scan (infeasible routes only)
   show: { swimmer: true, streaks: true, ui: true },
+  icon: null,              // runtime override of swimmer.icon (key i): 'glyph' | 'beacon'
+  tempo: 1,                // runtime multiplier on anim.speedup (keys [ ])
   kiosk: false,
   still: false,            // ?still=1 → zero current (physics sanity)
   view: null,              // the fitted view (metres ↔ pixels), set by main.js on resize

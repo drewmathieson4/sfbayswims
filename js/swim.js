@@ -96,14 +96,15 @@ export function integrateRoute(route, t0Ms, vs, field, { sweep = true } = {}) {
 
 /** Position (and heading, effort) along a profile at swim-time tau. */
 export function positionAt(profile, tau) {
-  const { n, t, x, y, leg, hdg, eff } = profile;
-  if (n === 0) return { x: 0, y: 0, legIndex: 0, hdg: 0, effort: 0, i: 0 };
-  if (n === 1 || tau <= t[0]) return { x: x[0], y: y[0], legIndex: leg[0], hdg: hdg[0], effort: eff[0], i: 0 };
-  if (tau >= t[n - 1]) return { x: x[n - 1], y: y[n - 1], legIndex: leg[n - 1], hdg: hdg[n - 1], effort: eff[n - 1], i: n - 1 };
+  const { n, t, s, x, y, leg, hdg, eff } = profile;
+  const g0 = n > 1 ? (s[1] - s[0]) / (t[1] - t[0] || 1) : 0;
+  if (n === 0) return { x: 0, y: 0, legIndex: 0, hdg: 0, effort: 0, g: 0, i: 0 };
+  if (n === 1 || tau <= t[0]) return { x: x[0], y: y[0], legIndex: leg[0], hdg: hdg[0], effort: eff[0], g: g0, i: 0 };
+  if (tau >= t[n - 1]) return { x: x[n - 1], y: y[n - 1], legIndex: leg[n - 1], hdg: hdg[n - 1], effort: eff[n - 1], g: 0, i: n - 1 };
   let lo = 0, hi = n - 1;
   while (hi - lo > 1) { const m = (lo + hi) >> 1; if (t[m] <= tau) lo = m; else hi = m; }
-  const f = (tau - t[lo]) / (t[hi] - t[lo] || 1);
-  return { x: x[lo] + (x[hi] - x[lo]) * f, y: y[lo] + (y[hi] - y[lo]) * f, legIndex: leg[lo], hdg: hdg[lo], effort: eff[lo], i: lo };
+  const f = (tau - t[lo]) / (t[hi] - t[lo] || 1), g = (s[hi] - s[lo]) / (t[hi] - t[lo] || 1);   // g: ground speed on this sample, m/s
+  return { x: x[lo] + (x[hi] - x[lo]) * f, y: y[lo] + (y[hi] - y[lo]) * f, legIndex: leg[lo], hdg: hdg[lo], effort: eff[lo], g, i: lo };
 }
 
 /** The coming hours in stepMin steps: the earliest feasible start and the fastest one. */

@@ -89,6 +89,7 @@ export async function start({ canvas, mapEl, params, onResize, live, nextWorld }
   const markDirty = () => { dirty = true; clearTimeout(recomputeTimer); recomputeTimer = setTimeout(() => { recomputeTimer = null; if (dirty) recomputeSafe(); }, 120); };
   const recomputeSafe = () => { try { recompute(); } catch (e) { console.error('recompute:', e.message, e.stack); } };
   on('selectedTime', markDirty); on('paceMps', markDirty); on('data', markDirty); on('routeId', markDirty);
+  on('icon', () => swimmer?.rebuild());
   on('now', () => { if (state.selectedTime == null) { const m = Math.floor(state.now / 60000); if (m !== lastMinute) { lastMinute = m; markDirty(); } } });
   function recompute() {
     dirty = false;
@@ -130,7 +131,7 @@ export async function start({ canvas, mapEl, params, onResize, live, nextWorld }
     if (state.show.streaks) particles.step(dt, effectiveTime()); else if (streaksWere) particles.clear();
     streaksWere = state.show.streaks;
     if (!state.paused && state.show.swimmer) swimmer.step(dt);
-    if ((hudTick = (hudTick + 1) % 8) === 0) hud.setElapsed(swimmer.elapsed);
+    if ((hudTick = (hudTick + 1) % 8) === 0) { hud.setElapsed(swimmer.elapsed, CONFIG.anim.speedup * (state.tempo || 1)); hud.setSpeed(swimmer.speedMps); }
     if (state.debug) drawDebug(effectiveTime());
   }
   requestAnimationFrame(tick);
@@ -138,7 +139,7 @@ export async function start({ canvas, mapEl, params, onResize, live, nextWorld }
   function stepFrames(n, dt = 1 / 30) { if (dirty) recomputeSafe(); forceRender = true; try { for (let i = 0; i < n; i++) tickBody(dt); } finally { forceRender = false; } }
   async function afterMount() {
     if (!Number.isFinite(frames)) return;
-    try { await world?.photo.ready; await new Promise(r => setTimeout(r, 50)); stepFrames(frames); hud.setElapsed(swimmer?.elapsed ?? 0); }
+    try { await world?.photo.ready; await new Promise(r => setTimeout(r, 50)); stepFrames(frames); hud.setElapsed(swimmer?.elapsed ?? 0, CONFIG.anim.speedup * (state.tempo || 1)); hud.setSpeed(swimmer?.speedMps ?? 0); }
     finally { frozen = true; document.documentElement.classList.add('snapshot-ready'); }
   }
 
