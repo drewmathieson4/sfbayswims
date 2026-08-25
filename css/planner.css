@@ -8,7 +8,8 @@ button, input, select { font: inherit; color: inherit; }
 button { background: none; border: 1px solid var(--line); border-radius: 6px; padding: 0.35em 0.7em; cursor: pointer; color: var(--ink2); }
 button:hover { border-color: rgba(255, 255, 255, 0.4); color: var(--ink); }
 button.on { background: rgba(255, 255, 255, 0.14); color: var(--ink); border-color: rgba(255, 255, 255, 0.4); }
-input { background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line); border-radius: 6px; padding: 0.35em 0.5em; color: var(--ink); }
+input, select { background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line); border-radius: 6px; padding: 0.35em 0.5em; color: var(--ink); }
+select option { background: #111; color: var(--ink); }
 input[type=range] { padding: 0; accent-color: #fff; }
 input[type=number] { width: 4.5em; }
 a { color: var(--ink2); }
