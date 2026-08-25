@@ -5,7 +5,7 @@
 import { state, set, on } from '../engine/state.js';
 
 export function createCycle({ b, presets, overlay, busy = () => false, onLap = null }) {
-  const html = document.documentElement, services = b.services;
+  const html = document.documentElement, services = b.services, seeded = b.params?.has('seed');   // ?seed= keeps the start deterministic for tests
   let running = false, list = [], idx = 0, timer = null, finishing = false, current = null;
   const routesFor = w => { const all = b.live.routes || [], want = presets.routes?.[w]; return want ? want.map(id => all.find(r => r.id === id)).filter(Boolean) : all; };
   const clear = () => { clearTimeout(timer); timer = null; };
@@ -23,7 +23,7 @@ export function createCycle({ b, presets, overlay, busy = () => false, onLap = n
   function slot() {
     timer = null;
     if (!running || !state.show.swimmer || quiet() || busy()) { idle(); return; }
-    if (!list.length) { list = routesFor(state.world); idx = 0; }
+    if (!list.length) { list = routesFor(state.world); idx = seeded ? 0 : Math.floor(Math.random() * list.length); }   // a fresh view starts on a random swim
     if (!list.length) return;
     if (idx >= list.length) { idx = 0; onLap?.(); if (busy()) return; }
     const r = list[idx];

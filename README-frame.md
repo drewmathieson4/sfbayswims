@@ -83,7 +83,8 @@ stays on for debugging). `lsusb` on the Pi lists it as a keyboard.
 
 ## 3. What the frame does on its own
 
-- The swims cycle by themselves: each starts from the current minute, lasts `swimSeconds` (60 s), holds a
+- The swims cycle by themselves, in the view's order from a random first swim (again after every view change):
+  each starts from the current minute, lasts `swimSeconds` (60 s), holds a
   second, fades, rests two seconds, then the next; a swim the current makes impossible plays its
   fight and drift (`sweptSeconds`) with the caption *too much current · next 4:10pm*. Display never blanks
   (wake lock + OS settings).
