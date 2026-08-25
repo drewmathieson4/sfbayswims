@@ -19,7 +19,8 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font); font-
 #photo { z-index: 0; filter: var(--photo-filter); }
 #particles { z-index: 1; }
 #svg { z-index: 2; }
-#debugcanvas { z-index: 3; pointer-events: none; }   /* created by js/app.js only when the debug overlay is on */
+#debugcanvas { z-index: 3; pointer-events: none; display: none; }   /* created by js/app.js on first use; shown only while html.debug */
+html.debug #debugcanvas { display: block; }
 #svg path, #svg circle { vector-effect: non-scaling-stroke; }
 
 /* swimmer: the swum path, the icon, its stroking arms, the comet tail and the breadcrumbs */
