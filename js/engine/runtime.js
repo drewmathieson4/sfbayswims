@@ -1,17 +1,16 @@
-// The running app: live-data refresh loops, the physics recompute, the animation loop, per-world mount/unmount,
-// and the debug overlay. main.js boots it once; worlds are mounted into it.
+// The engine's runtime: live-data refresh loops, the physics recompute, the animation loop, per-world mount/unmount.
+// boot.js starts it once and mounts worlds into it; apps read state, subscribe with on(), and hook the loop with onTick().
 import { CONFIG } from './config.js';
 import { state, set, on, bumpData, displayTime, physicsTime } from './state.js';
 import * as data from './data.js';
 import { TideSeries } from './tide.js';
-import { createHud, bindControls, kioskMode } from './ui.js';
-import { CurrentSeries, KN } from './current.js';
+import { createDebug } from './debug.js';
+import { CurrentSeries } from './current.js';
 import { createParticles } from './particles.js';
 import { integrateRoute, scanWindows } from './swim.js';
 import { createSwimmer } from './animate.js';
-import { toPx } from './projection.js';
 
-export async function start({ canvas, mapEl, params, onResize, live, nextWorld }) {
+export async function start({ canvas, mapEl, params, onResize, live, hintEl = null }) {
   const offline = params.has('offline');
   const seed = params.has('seed') ? +params.get('seed') : null;
   const frames = params.has('frames') ? +params.get('frames') : null;   // test hook: render N frames, then freeze
@@ -21,9 +20,7 @@ export async function start({ canvas, mapEl, params, onResize, live, nextWorld }
   // refs are functions because both series are replaced as data arrives; the fields read them at call time.
   let tide = null, currents = null;
   const refs = { tideRef: () => tide, liveCurrentsRef: () => currents };
-  const hud = createHud({ live });
-  bindControls({ live, mapEl, onSwitchWorld: nextWorld });
-  if (state.kiosk) kioskMode();
+  const debug = createDebug({ mapEl, params });
 
   const year = new Date().getFullYear();
   for (const y of [year, year + 1]) {                                   // this year's and next year's bundles: no restart at New Year
@@ -35,7 +32,6 @@ export async function start({ canvas, mapEl, params, onResize, live, nextWorld }
   if (tide) bumpData({});
 
   let failures = 0, lastOk = Date.now();
-  const hintEl = document.getElementById('hint');
   const noteOk = () => { failures = 0; lastOk = Date.now(); if (hintEl) hintEl.textContent = ''; };
   const noteFail = () => { failures++; };
   async function refreshTides() {
@@ -127,7 +123,8 @@ export async function start({ canvas, mapEl, params, onResize, live, nextWorld }
   }
 
   // ---- the loop ----
-  let last = performance.now(), hudTick = 0, forceRender = false, frozen = false, loopErrors = 0, acc = 0, streaksWere = true;
+  let last = performance.now(), forceRender = false, frozen = false, loopErrors = 0, acc = 0, streaksWere = true;
+  const tickFns = [];                                    // the apps' per-frame hooks fn(dt, force): the rail's elapsed/speed live there
   function tick(ts) {
     const dt = Math.min(0.05, (ts - last) / 1000); last = ts;
     const maxFps = CONFIG.anim.maxFps || 0;
@@ -144,42 +141,17 @@ export async function start({ canvas, mapEl, params, onResize, live, nextWorld }
       if (swimmer.step(dt)) stopSwim();                                       // lap over: the swimmer is back at the start, the picture returns to now
       else state.swimAt = state.physics ? state.physics.at + swimmer.elapsed * 1000 : null;
     }
-    if ((hudTick = (hudTick + 1) % 8) === 0) { hud.setElapsed(swimmer.elapsed, CONFIG.anim.speedup * (state.tempo || 1)); hud.setSpeed(swimmer.speedMps); }
-    if (state.debug) drawDebug(displayTime());
+    for (const fn of tickFns) fn(dt, false);
+    if (state.debug) debug.draw({ world, particles, t: displayTime() });
   }
   requestAnimationFrame(tick);
   /** Test hooks: ?frames=N starts the swim, renders N frames after the first mount and freezes; stepFrames() advances a frozen page. */
   function stepFrames(n, dt = 1 / 30) { if (dirty) recomputeSafe(); forceRender = true; try { for (let i = 0; i < n; i++) tickBody(dt); } finally { forceRender = false; } }
   async function afterMount() {
     if (!Number.isFinite(frames)) return;
-    try { await world?.photo.ready; await new Promise(r => setTimeout(r, 50)); if (state.show.swimmer) set({ swimming: true }); stepFrames(frames); hud.setElapsed(swimmer?.elapsed ?? 0, CONFIG.anim.speedup * (state.tempo || 1)); hud.setSpeed(swimmer?.speedMps ?? 0); }
+    try { await world?.photo.ready; await new Promise(r => setTimeout(r, 50)); if (state.show.swimmer) set({ swimming: true }); stepFrames(frames); for (const fn of tickFns) fn(0, true); }
     finally { frozen = true; document.documentElement.classList.add('snapshot-ready'); }
   }
 
-  // ---- debug overlay (key d / ?debug=1): current arrows, station dots, the water mask with ?mask=1 ----
-  let dbg = null;
-  function drawDebug(t) {
-    const v = state.view, field = world.field; if (!v) return;
-    if (!dbg) { dbg = document.createElement('canvas'); dbg.id = 'debugcanvas'; mapEl.appendChild(dbg); }
-    const dpr = v.dpr || 1;
-    if (dbg.width !== Math.round(v.pxW * dpr)) { dbg.width = Math.round(v.pxW * dpr); dbg.height = Math.round(v.pxH * dpr); dbg.style.width = v.pxW + 'px'; dbg.style.height = v.pxH + 'px'; }
-    const c2 = dbg.getContext('2d'); c2.setTransform(dpr, 0, 0, dpr, 0, 0); c2.clearRect(0, 0, v.pxW, v.pxH);
-    const c = field.prepare(t), vec = { x: 0, y: 0 }, stepM = Math.max(25, Math.round(v.w / 60 / 25) * 25);
-    c2.strokeStyle = 'rgba(200,0,0,0.6)'; c2.lineWidth = 1; c2.beginPath();
-    for (let y = Math.ceil(v.y0 / stepM) * stepM; y < v.y1; y += stepM) for (let x = Math.ceil(v.x0 / stepM) * stepM; x < v.x1; x += stepM) {
-      field.sampleInto(x, y, c, vec);
-      if (Math.hypot(vec.x, vec.y) < 0.01) continue;
-      const sc = stepM * 0.8 / KN, p0 = toPx(v, x, y), p1 = toPx(v, x + vec.x * sc, y + vec.y * sc), a = Math.atan2(p1[1] - p0[1], p1[0] - p0[0]);
-      c2.moveTo(p0[0], p0[1]); c2.lineTo(p1[0], p1[1]);
-      c2.moveTo(p1[0], p1[1]); c2.lineTo(p1[0] - 4 * Math.cos(a - 0.5), p1[1] - 4 * Math.sin(a - 0.5));
-      c2.moveTo(p1[0], p1[1]); c2.lineTo(p1[0] - 4 * Math.cos(a + 0.5), p1[1] - 4 * Math.sin(a + 0.5));
-    }
-    c2.stroke();
-    if (field.stations) { c2.fillStyle = 'rgba(0,120,255,0.9)'; for (const s of field.stations) { const p = toPx(v, s.x, s.y); c2.beginPath(); c2.arc(p[0], p[1], 3, 0, 7); c2.fill(); c2.fillText(s.id, p[0] + 5, p[1] - 4); } }
-    if (params.has('mask')) { const g = world.geom.grid; c2.fillStyle = 'rgba(0,80,255,0.25)'; const step = Math.max(1, Math.round(2 / v.s / g.cell)); for (let j = 0; j < g.ny; j += step) for (let i = 0; i < g.nx; i += step) { if (g.type[j * g.nx + i] === 0) continue; const p = toPx(v, g.x0 + i * g.cell, g.y0 + (j + step) * g.cell); c2.fillRect(p[0], p[1], g.cell * step * v.s + 0.5, g.cell * step * v.s + 0.5); } }
-    c2.fillStyle = 'rgba(200,0,0,0.9)'; c2.font = '11px monospace';
-    c2.fillText(`ref ${c.kn.toFixed(2)} kn @${c.dir.toFixed(0)}° ${c.flood ? 'FLOOD' : 'EBB'} src=${c.source} | tide ${c.rateFtH.toFixed(2)} ft/h | particles ${particles?.count} | physics ${state.physics?.ms?.toFixed(1)} ms | world ${state.world}`, 12, v.pxH - 12);
-  }
-
-  return { hud, refs, mount, unmount, afterMount, recompute: recomputeSafe, stepFrames, get particles() { return particles; }, get swimmer() { return swimmer; }, get field() { return world?.field; } };
+  return { refs, mount, unmount, afterMount, recompute: recomputeSafe, stepFrames, onTick: fn => { tickFns.push(fn); }, get particles() { return particles; }, get swimmer() { return swimmer; }, get field() { return world?.field; } };
 }

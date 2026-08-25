@@ -10,6 +10,7 @@ import { createLayers } from './map.js';
 import { createField, CurrentSeries } from './current.js';
 import { createStationField } from './stationfield.js';
 import { state } from './state.js';
+import { dataUrl } from './paths.js';
 
 const BASE = structuredClone(CONFIG);      // the defaults = the cove, captured before main.js applies URL flags
 const loaded = new Map(), built = new Map();
@@ -19,15 +20,15 @@ export async function loadJSON(url) {
   if (!r.ok) throw new Error(`${url}: ${r.status}`);
   return r.json();
 }
-export function loadIndex() { return loadJSON('data/worlds/index.json'); }
+export function loadIndex() { return loadJSON(dataUrl('worlds/index.json')); }
 
 export async function loadWorld(id, year = new Date().getFullYear()) {
   if (loaded.has(id)) return loaded.get(id);
-  const dir = `data/worlds/${id}/`, world = await loadJSON(dir + 'world.json'), pdir = dir + (world.photo?.dir || 'photo') + '/';
+  const dir = dataUrl(`worlds/${id}/`), world = await loadJSON(dir + 'world.json'), pdir = dir + (world.photo?.dir || 'photo') + '/';
   const opt = url => fetch(url, { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null);   // optional files → null
   const jobs = {
     landmarks: loadJSON(dir + world.landmarks), routes: loadJSON(dir + world.routes), photoMeta: opt(pdir + 'photo.json'),
-    currentsThis: opt(world.bundles.currents.replace('{year}', year)), currentsNext: opt(world.bundles.currents.replace('{year}', year + 1)),
+    currentsThis: opt(dataUrl(world.bundles.currents.replace('{year}', year))), currentsNext: opt(dataUrl(world.bundles.currents.replace('{year}', year + 1))),
   };
   if (world.geometry.type === 'zones') { jobs.shoreline = loadJSON(dir + world.geometry.shoreline); jobs.zones = loadJSON(dir + world.geometry.zones); }
   else { jobs.maskMeta = loadJSON(dir + world.geometry.meta); jobs.mask = loadMask(dir + world.geometry.file); }

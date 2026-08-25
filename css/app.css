@@ -1,37 +1,4 @@
-/* One palette: white ink on black — the photos are dark-toned, and a dark ground avoids a white flash on reload. */
-:root {
-  --bg: #000000;
-  --ink: #ffffff;
-  --mute: #9a9a9a;
-  --panel: rgba(0, 0, 0, 0.55);
-  --current: rgba(255, 255, 255, 0.2);   /* streak colour (read by js/particles.js) */
-  --photo-filter: none;                  /* set from js/config.js photo.filter at boot */
-  --route-done-w: 1px;                   /* route.doneWidth */
-  --swimmer-r: 5;                        /* route.dotR */
-  --ui-scale: 1;                         /* uiScale */
-  --font: "Helvetica Neue", Helvetica, Inter, Arial, sans-serif;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; }
-body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: calc(11px * var(--ui-scale)); overflow: hidden; -webkit-font-smoothing: antialiased; }
-#map { position: absolute; inset: 0; background: var(--bg); }
-#map > canvas, #map > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-#photo { z-index: 0; filter: var(--photo-filter); }
-#particles { z-index: 1; }
-#svg { z-index: 2; }
-#debugcanvas { z-index: 3; pointer-events: none; display: none; }   /* created by js/app.js on first use; shown only while html.debug */
-html.debug #debugcanvas { display: block; }
-#svg path, #svg circle { vector-effect: non-scaling-stroke; }
-
-/* swimmer: the swum path, the icon, its stroking arms, the comet tail and the breadcrumbs */
-#svg .route-done { fill: none; stroke: var(--ink); stroke-width: var(--route-done-w); stroke-linecap: round; stroke-linejoin: round; }
-#svg .icon .dot { fill: #fff; stroke: rgba(0, 0, 0, 0.5); stroke-width: 1px; }
-#svg .icon .beacon { fill: none; stroke: #fff; stroke-width: 1.5px; transform-box: fill-box; transform-origin: center; animation: beacon 2.4s ease-out infinite; }
-@keyframes beacon { from { transform: scale(0.6); opacity: 0.9; } to { transform: scale(3.2); opacity: 0; } }
-#svg .icon .body, #svg .icon .head { fill: var(--ink); stroke: var(--bg); stroke-width: 0.6px; }
-#svg .icon .arm { fill: none; stroke: var(--ink); stroke-width: var(--arm-w, 1px); stroke-linecap: round; }
-#svg .tail path { fill: none; stroke: var(--ink); stroke-linecap: round; stroke-linejoin: round; }
-#svg .crumbs circle { fill: var(--ink); opacity: 0.7; }
+/* The app's UI on top of css/engine.css: HUD corners, the rail, the controls legend, the u/p switch, ambient dimming. */
 
 /* HUD (top corners) */
 .hud { position: absolute; z-index: 5; pointer-events: none; letter-spacing: 0.16em; text-transform: uppercase; background: var(--panel); padding: 0.9em 1.2em; }
@@ -64,12 +31,8 @@ html.debug #debugcanvas { display: block; }
 #keys .keys span:nth-child(even) { color: var(--mute); }
 html.kiosk #keys, html.no-keys #keys { display: none; }
 
-/* switches (keys a / s / u / p) and kiosk */
+/* switches (keys u / p) */
 html.no-ui .hud, html.no-ui #rail { display: none; }
-html.no-swimmer #svg #route, html.no-swimmer #svg #swimmer { display: none; }
-html.no-streaks #particles { display: none; }
-html.kiosk { user-select: none; -webkit-user-select: none; }
-html.kiosk.idle { cursor: none; }
 @media (max-width: 720px) { #rail { left: 12px; bottom: 12px; min-width: 150px; } .hud.tl { left: 12px; } .hud.tr { right: 12px; } }
 
 /* kiosk ambient dimming (js/ambient.js): everything, HUD included, dims like a print in a dark room */
