@@ -52,6 +52,14 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font); font-
 #rail .note:empty, #rail .win:empty { display: none; }
 #rail .v { font-variant-numeric: tabular-nums; }
 
+/* controls legend (bottom right): hidden with the overlay (u), by h, and always in kiosk mode */
+.hud.br { bottom: 16px; right: 16px; }
+#keys .title { font-size: 1.1em; margin-bottom: 0.5em; }
+#keys .keys { display: grid; grid-template-columns: auto auto; column-gap: 1.4em; row-gap: 0.25em; font-size: 0.95em; text-transform: none; letter-spacing: 0.06em; }
+#keys .keys span:nth-child(odd) { color: var(--ink); font-variant-numeric: tabular-nums; }
+#keys .keys span:nth-child(even) { color: var(--mute); }
+html.kiosk #keys, html.no-keys #keys { display: none; }
+
 /* switches (keys a / s / u / p) and kiosk */
 html.no-ui .hud, html.no-ui #rail { display: none; }
 html.no-swimmer #svg #route, html.no-swimmer #svg #swimmer { display: none; }

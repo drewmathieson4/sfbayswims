@@ -111,6 +111,7 @@ export function bindControls({ live, mapEl, onSwitchWorld }) {
       case 'p': case 'P': { const on_ = !(state.show.swimmer || state.show.ui); set({ show: { ...state.show, swimmer: on_, ui: on_ } }); applyShow(); break; }   // photo mode
       case 'v': case 'V': if (!e.repeat) onSwitchWorld(); break;
       case 'd': case 'D': set({ debug: !state.debug }); document.documentElement.classList.toggle('debug', state.debug); break;
+      case 'h': case 'H': document.documentElement.classList.toggle('no-keys'); break;                                      // the controls legend
       case '-': case '_': set({ paceMps: YD100 / Math.min(300, Math.round(YD100 / state.paceMps) + 1) }); break;   // pace: ±1 s per 100 yd
       case '=': case '+': set({ paceMps: YD100 / Math.max(40, Math.round(YD100 / state.paceMps) - 1) }); break;
       case 'i': case 'I': set({ icon: (state.icon || CONFIG.swimmer.icon) === 'glyph' ? 'beacon' : 'glyph' }); break;   // swimmer glyph ↔ beacon

@@ -27,7 +27,8 @@ otherwise the date and time · `n` / `Esc` — back to current · **`v`** — sw
 route) · `space` — pause the swimmer · `i` — swimmer glyph ↔ white dot with a beacon · `[` `]` — animation slower /
 faster (the multiplier shows next to *elapsed*) · `-` `+` — pace ±1 s per 100 yd · `a` `s` `u` — swimmer / streaks /
 UI overlay on or off · `p` — photo mode (swimmer and overlay off together) · `d` — debug overlay (current arrows,
-stations; add `?mask=1` for the water mask). The rail's **speed** row is the swimmer's ground speed right now as time
+stations; add `?mask=1` for the water mask) · `h` — hide the controls legend in the bottom-right corner (it never
+shows in kiosk mode). The rail's **speed** row is the swimmer's ground speed right now as time
 per 100 yd, whole seconds — it changes with the current along the route. While time-travelling the water temperature is tagged *now* and the wind is
 hidden (`hud` in config).
 
