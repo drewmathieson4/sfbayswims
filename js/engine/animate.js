@@ -12,6 +12,7 @@ export function createSwimmer({ routeLayer, swimmerLayer, config = CONFIG }) {
   const icon = el('g', { class: 'icon' }, swimmerLayer);
   let profile = null, tau = 0, hold = 0, armPhase = 0, crumbCount = 0, parts = {}, iconKey = '';
   let panic = 0;                                         // effort from the physics: 0 cruising · 0.5 sprint · 1 fighting · 0.3 carried
+  let shownHdg = null;                                   // the glyph's eased heading (swimmer.turnEaseS); snaps when placed with dt 0
   let play = {};                                         // per-swim playback from setRoute(prof, opts): rate, sweptRate, crumbEveryS (null = config)
   const R = () => config.route.dotR, S = () => config.swimmer.size;
 
@@ -37,7 +38,9 @@ export function createSwimmer({ routeLayer, swimmerLayer, config = CONFIG }) {
   function updateIcon(p, dt) {
     const r = R(), A = config.anim, glyph = mode() === 'glyph';
     const jitter = panic ? panic * (A.panicJitterDeg || 0) * Math.sin(armPhase * 1.7) : 0;   // a desperate wobble when fighting
-    const rot = glyph ? p.hdg + jitter : 0;
+    if (shownHdg == null || dt <= 0) shownHdg = p.hdg;
+    else { const d = ((p.hdg - shownHdg + 540) % 360) - 180; shownHdg = (shownHdg + d * Math.min(1, dt / (config.swimmer.turnEaseS || 0.25)) + 360) % 360; }
+    const rot = glyph ? shownHdg + jitter : 0;
     icon.setAttribute('transform', `translate(${p.x.toFixed(2)} ${(-p.y).toFixed(2)}) rotate(${rot.toFixed(1)}) scale(${S()})`);
     if (!glyph) return;
     const G = config.swimmer.glyph;

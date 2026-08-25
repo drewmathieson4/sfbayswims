@@ -1,7 +1,8 @@
 // routes.json + landmarks.json → routes in metres. Waypoints are landmark ids, inline {lat, lon} points, or
 // {follow: <structure>} steps that trace an offset curve along a pier/breakwater between their neighbours
-// (swimmers hug structures). Loops close; out-and-backs are expanded and shifted right so the lanes don't overlap.
-import { distToSegment } from './geometry.js';
+// (swimmers hug structures). Loops close; out-and-backs are expanded and shifted right so the lanes don't overlap; every
+// path is smoothed at the swimmer's turning scale (route.turnRadiusM) so the position and heading stay continuous.
+import { distToSegment, isWater } from './geometry.js';
 
 const ALIASES = { muni: 'Municipal Pier', breakwater: "Fisherman's Wharf Breakwater", hyde: 'Hyde Street Pier', pier45: 'Pier 45' };
 
@@ -92,6 +93,42 @@ function tangentTrim(arc, from, to, maxDeg, look = 30) {
   return a.slice(j0, j1 + 1);
 }
 
+/**
+ * Smooth the whole path at the scale of R metres: resample every R/5 m, then move each point to the mean of the points
+ * within ±R/2 m along the path (the two ends stay put). Micro-kinks — pier-ring joins, keep-right mitres — vanish and
+ * corners become curves of radius ≈ R/2, so the swimmer's position and heading are continuous. A point the smoothing
+ * would put on land keeps its resampled place. Named waypoints survive on their nearest sample.
+ */
+export function smoothPath(seq, R, { inWater = null } = {}) {
+  if (!(R > 0) || seq.length < 3) return seq;
+  const step = Math.max(0.5, R / 5);
+  const pts = [{ ...seq[0] }];
+  let carry = 0;                                            // distance already covered since the last sample
+  for (let i = 1; i < seq.length; i++) {
+    const a = seq[i - 1], b = seq[i], L = Math.hypot(b.x - a.x, b.y - a.y);
+    if (L < 1e-6) continue;
+    let d = step - carry;
+    for (; d <= L; d += step) pts.push({ id: null, name: '', follow: b.follow, x: a.x + (b.x - a.x) * d / L, y: a.y + (b.y - a.y) * d / L });
+    carry = L - (d - step);
+  }
+  pts.push({ ...seq[seq.length - 1] });
+  for (const w of seq) {                                    // named waypoints: the nearest sample takes the name
+    if (!w.id) continue;
+    let best = -1, bd = Infinity;
+    for (let k = 1; k < pts.length - 1; k++) { const dd = Math.hypot(pts[k].x - w.x, pts[k].y - w.y); if (dd < bd) { bd = dd; best = k; } }
+    if (best > 0 && bd <= step) { pts[best].id = w.id; pts[best].name = w.name; }
+  }
+  const half = Math.max(1, Math.round(R / 2 / step)), n = pts.length, out = pts.map(q => ({ ...q }));
+  for (let i = 1; i < n - 1; i++) {
+    const k = Math.min(half, i, n - 1 - i);
+    let sx = 0, sy = 0;
+    for (let j = i - k; j <= i + k; j++) { sx += pts[j].x; sy += pts[j].y; }
+    const x = sx / (2 * k + 1), y = sy / (2 * k + 1);
+    if (!inWater || inWater(x, y)) { out[i].x = x; out[i].y = y; }
+  }
+  return out;
+}
+
 /** Keep right: shift each leg d metres to the right of its direction of travel, so out and back
  *  never overlap. Gentle corners are mitred (averaged); sharp turns / turnarounds pass through the
  *  original vertex, giving a small U. */
@@ -113,7 +150,11 @@ export function keepRight(points, d) {
     else { out.push(p.b); out.push({ ...p.v }); out.push(q.a); }                               // sharp turn: small U through the vertex
   }
   out.push(segs[segs.length - 1].b);
-  // start and finish exactly where the route says; the lanes split/merge within the first metres
+  // start and finish exactly where the route says; the lane peels off / merges back over a run of ~3 d so there is
+  // no sideways jog at either end
+  const f = segs[0], l = segs[segs.length - 1], ramp = seg => Math.min(3 * d, 0.5 * Math.hypot(seg.b.x - seg.a.x, seg.b.y - seg.a.y));
+  out[0] = { ...f.a, x: f.a.x + f.ux * ramp(f), y: f.a.y + f.uy * ramp(f) };
+  out[out.length - 1] = { ...l.b, x: l.b.x - l.ux * ramp(l), y: l.b.y - l.uy * ramp(l) };
   out.unshift({ ...points[0] }); out.push({ ...points[points.length - 1] });
   return out;
 }
@@ -168,8 +209,11 @@ export function buildRoutes(routesJson, landmarksJson, geom, opts = {}) {
     }
     // 4. keep right so the way out and the way back don't overlap
     seq = keepRight(seq, r.keepRightM ?? opts.keepRightM ?? 0);
-    // 5. the drawn path keeps every point; the physics integrates a decimated polyline (a vertex every ≥ 8 m or on a
-    //    > 15° turn) — the pier-following rings are dense (~1 m) and the integrator steps 10 m anyway
+    // 5. smooth the path at the swimmer's turning scale (swimmers turn on a curve; nothing sub-metre survives)
+    seq = smoothPath(seq, r.turnRadiusM ?? opts.turnRadiusM ?? 0, { inWater: geom?.grid ? (x, y) => isWater(geom, x, y) : null });
+    // 6. the path keeps every point; the physics integrates a polyline that splits every ≥ 8 m, wherever the next
+    //    segment bends more than 8° off the chord, and at every named waypoint — the rings are dense (~1 m) and the
+    //    integrator steps 10 m anyway
     let meters = 0;
     for (let i = 1; i < seq.length; i++) meters += Math.hypot(seq[i].x - seq[i - 1].x, seq[i].y - seq[i - 1].y);
     const legs = [];
@@ -177,9 +221,9 @@ export function buildRoutes(routesJson, landmarksJson, geom, opts = {}) {
       const p = seq[i], d = Math.hypot(p.x - from.x, p.y - from.y);
       if (d < 0.05) continue;
       const last = i === seq.length - 1, nxt = last ? null : seq[i + 1];
-      let turn = 0;
-      if (nxt) { const a = Math.atan2(p.y - from.y, p.x - from.x), b = Math.atan2(nxt.y - p.y, nxt.x - p.x); turn = Math.abs(((b - a + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI) * 180 / Math.PI; }
-      if (last || d >= 8 || turn > 15 || p.id) { legs.push({ from, to: p, meters: d }); from = p; }
+      let bend = 0;
+      if (nxt) { const a = Math.atan2(p.y - from.y, p.x - from.x), b = Math.atan2(nxt.y - p.y, nxt.x - p.x); bend = Math.abs(((b - a + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI) * 180 / Math.PI; }
+      if (last || d >= 8 || bend > 8 || p.id) { legs.push({ from, to: p, meters: d }); from = p; }
     }
     routes.push({ id: r.id, name: r.name, loop: !!r.loop, points: seq, waypoints: items.filter(x => !x.follow), legs, meters });
   }

@@ -79,7 +79,10 @@ direction. `cellIndex` / `isWater` are the grid contract everyone uses.
 points, or **follow steps** that trace an offset curve along a pier (`offsetRing`: per-edge offsets, round joins,
 Chaikin smoothing; `arc`/`fullRing`/`tangentTrim` choose and trim the arc). Loops close, out-and-backs expand and
 are shifted right (`keepRight`) so the lanes don't overlap. The drawn `points` keep every vertex; the physics
-`legs` are a decimated polyline (a vertex every ≥ 8 m or on a turn).
+`legs` are a decimated polyline (a vertex every ≥ 8 m, on an 8° bend, or at a named waypoint). The path is smoothed
+first (`smoothPath`: resampled every `route.turnRadiusM`/5 and averaged over ±`turnRadiusM`/2 along the path — 10 m in
+the cove, 150 m in the Bay — with any point that would land on shore kept in place), and `positionAt` interpolates the
+heading, so the swimmer's position and heading are continuous at any tempo.
 
 **`js/engine/tide.js`** — `TideSeries`: NOAA hi/lo extremes → the rate of rise/fall by cosine interpolation (what the
 cove's fill/drain needs), `covers`, `merge` (bundle + cache + live).

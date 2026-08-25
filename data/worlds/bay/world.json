@@ -61,7 +61,8 @@
   },
   "route": {
    "dotR": 60,
-   "keepRightM": 0
+   "keepRightM": 0,
+   "turnRadiusM": 150
   }
  }
 }
