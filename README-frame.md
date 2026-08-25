@@ -1,5 +1,25 @@
 # The frame — building and running the Frame on a Raspberry Pi
 
+> **For the agent that does the Pi work — read this box first.** The frame is the wedding gift; the Planner is a
+> separate product that happens to share the engine. Your scope is the frame and the Pi only:
+>
+> - **Yours:** `frame/index.html`, `css/frame.css`, `js/frame/` (main, presets, cycle, button, overlay, kiosk, ambient),
+>   `data/frame.json` (presets; `data/frame.local.json` is per-Pi and gitignored), `tools/pi/` (install.sh, the systemd
+>   units, ambient.py, wifi_reset.py, comitup.conf, refresh-bundles.sh + cron, `pico/code.py` + `boot.py`),
+>   `tools/serve.py`, and this file.
+> - **Shared — change only with care, and check the Planner at `/` afterwards:** `js/engine/` (the physics, fields,
+>   worlds, streaks, swimmer), `css/engine.css`, `data/worlds/`, `data/*.json` bundles. Tunables for the frame belong in
+>   `data/frame.json`, not in the engine.
+> - **Not yours:** `index.html`, `css/planner.css`, `js/planner/` — the website.
+> - **What has never run on hardware:** all of `tools/pi/`. Order of work: §1 flash and install → check the four
+>   services → §2 flash the Pico (it now only holds `b` while the button is pressed; the browser decodes gestures) →
+>   §5 the frame-rate test in the Bay view (`?fps=30`) → §4 comitup on the Trixie image → §6 the soak test.
+> - **Test the frame without hardware** at `http://localhost:8000/frame/` (`python3 tools/serve.py 8000`): click, double-
+>   click, triple-click, hold on the picture or the space bar; `?seed=1&offline=1&persist=0` for a deterministic,
+>   network-free, non-persisting run; `APP.frame.{cycle,button,presets,switchView}` in the console.
+> - Drew's routine: a branch per change, he spot-checks, then `git checkout main && git merge --no-ff <branch> &&
+>   git branch -d <branch> && git push`. Never merge unasked.
+
 A wall-hung picture frame: a matte 15.6" laptop panel behind a mat, a Raspberry Pi hidden on the
 back, one cord to the wall, one hidden button under the bottom rail, a light sensor so the
 picture dims with the room. From across the room it should pass for a framed aerial photo.

@@ -15,6 +15,13 @@ dependencies, failure modes, the bundle chore and its automation).
 - **Untested on hardware:** the Pi kit (`tools/pi/`, `README-frame.md`) — flash, `install.sh`, the Pico with the new
   `code.py` (it just holds `b`), the Bay frame-rate test.
 
+## Two products, two kinds of work
+
+The **gift** (the Frame + the Raspberry Pi) and the **website** (the Planner) are separate products on one engine. An
+agent doing Pi/frame work should start from the box at the top of `README-frame.md`, which scopes exactly what to
+touch; an agent doing website work starts here and in `SPEC.md`. Changes to `js/engine/` affect both — check the other
+product before merging.
+
 ## Open list (from SPEC.md "later")
 
 Compare two starts or swims side by side · a 7-day calendar of best starts · lighter Bay bundles for phones (the 7 MB
