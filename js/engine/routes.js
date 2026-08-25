@@ -159,6 +159,27 @@ export function keepRight(points, d) {
   return out;
 }
 
+/** The physics polyline of a path: legs split every ≥ 8 m, on an 8° bend, or at a named waypoint; and the length. */
+export function legsFrom(seq) {
+  let meters = 0;
+  for (let i = 1; i < seq.length; i++) meters += Math.hypot(seq[i].x - seq[i - 1].x, seq[i].y - seq[i - 1].y);
+  const legs = [];
+  for (let i = 1, from = seq[0]; i < seq.length; i++) {
+    const p = seq[i], d = Math.hypot(p.x - from.x, p.y - from.y);
+    if (d < 0.05) continue;
+    const last = i === seq.length - 1, nxt = last ? null : seq[i + 1];
+    let bend = 0;
+    if (nxt) { const a = Math.atan2(p.y - from.y, p.x - from.x), b = Math.atan2(nxt.y - p.y, nxt.x - p.x); bend = Math.abs(((b - a + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI) * 180 / Math.PI; }
+    if (last || d >= 8 || bend > 8 || p.id) { legs.push({ from, to: p, meters: d }); from = p; }
+  }
+  return { legs, meters };
+}
+/** The same swim the other way (the planner's direction toggle): id + '~', the path reversed, the legs rebuilt. */
+export function reverseRoute(route) {
+  const points = route.points.slice().reverse(), { legs, meters } = legsFrom(points);
+  return { ...route, id: route.id + '~', name: route.name + ' · reversed', reversed: true, reverseOf: route.id, points, legs, meters, waypoints: route.waypoints.slice().reverse() };
+}
+
 export function buildRoutes(routesJson, landmarksJson, geom, opts = {}) {
   const offsetDefault = opts.followOffsetM ?? 15, proj = opts.proj;
   const landmarks = new Map();
@@ -214,18 +235,8 @@ export function buildRoutes(routesJson, landmarksJson, geom, opts = {}) {
     // 6. the path keeps every point; the physics integrates a polyline that splits every ≥ 8 m, wherever the next
     //    segment bends more than 8° off the chord, and at every named waypoint — the rings are dense (~1 m) and the
     //    integrator steps 10 m anyway
-    let meters = 0;
-    for (let i = 1; i < seq.length; i++) meters += Math.hypot(seq[i].x - seq[i - 1].x, seq[i].y - seq[i - 1].y);
-    const legs = [];
-    for (let i = 1, from = seq[0]; i < seq.length; i++) {
-      const p = seq[i], d = Math.hypot(p.x - from.x, p.y - from.y);
-      if (d < 0.05) continue;
-      const last = i === seq.length - 1, nxt = last ? null : seq[i + 1];
-      let bend = 0;
-      if (nxt) { const a = Math.atan2(p.y - from.y, p.x - from.x), b = Math.atan2(nxt.y - p.y, nxt.x - p.x); bend = Math.abs(((b - a + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI) * 180 / Math.PI; }
-      if (last || d >= 8 || bend > 8 || p.id) { legs.push({ from, to: p, meters: d }); from = p; }
-    }
-    routes.push({ id: r.id, name: r.name, loop: !!r.loop, points: seq, waypoints: items.filter(x => !x.follow), legs, meters });
+    const { legs, meters } = legsFrom(seq);
+    routes.push({ id: r.id, name: r.name, loop: !!r.loop, oneWay: !!r.oneWay, reverseOf: r.reverseOf || null, points: seq, waypoints: items.filter(x => !x.follow), legs, meters });
   }
   return { landmarks, routes };
 }

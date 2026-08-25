@@ -2,10 +2,12 @@
  "default": "cove",
  "worlds": [
   {
-   "id": "cove"
+   "id": "cove",
+   "title": "Aquatic Park"
   },
   {
-   "id": "bay"
+   "id": "bay",
+   "title": "San Francisco Bay"
   }
  ]
 }

@@ -1,14 +1,14 @@
 # Architecture — a walk through every file
 
-The app is a static site: `index.html` loads one ES module, `js/main.js`, which boots the shared **engine**
-(`js/engine/`) and adds this app's UI on top (`js/planner/hud.js`, `js/planner/keys.js`, `js/frame/kiosk.js`). No build
-step, no dependencies. Two products will share the engine — the Planner (this page) and the Frame (`frame/`) — see
-`SPEC.md`. Data lives under `data/`, prepared by the Python scripts under `tools/`. Everything is metres: each world
+Two products share one **engine** (`js/engine/`): the Planner (`index.html` → `js/planner/main.js`) and the Frame
+(`frame/index.html` → `js/frame/main.js`). No build step, no dependencies. See `SPEC.md` for the products. Data lives under `data/`, prepared by the Python scripts under `tools/`. Everything is metres: each world
 has a local origin, positions are metres east/north of it, and the SVG's user units are metres too (so a 30 m
 swimmer glyph in the Bay is literally `dotR: 30`).
 
 ```
-index.html ─ js/main.js ─┬─ js/engine/boot.js ─┬─ world.js ───┬─ geometry.js / mask.js      grid + zones (cove) | water-mask PNG (bay)
+index.html ─ js/planner/main.js
+frame/index.html ─ js/frame/main.js
+                         ├─ js/engine/boot.js ─┬─ world.js ───┬─ geometry.js / mask.js      grid + zones (cove) | water-mask PNG (bay)
                          │                     │              ├─ routes.js                  waypoints → metre polylines, pier-following
                          │                     │              ├─ photo.js · map.js          the aerial <image>; SVG layers
                          │                     │              └─ current.js / stationfield.js   the two current fields
@@ -16,24 +16,26 @@ index.html ─ js/main.js ─┬─ js/engine/boot.js ─┬─ world.js ──�
                          │                                    ├─ swim.js                    the physics: crab, sprint, sweep, 48-h scan
                          │                                    ├─ animate.js · particles.js  the swimmer; the streaks
                          │                                    └─ debug.js                   current arrows, station dots (key d)
-                         ├─ js/planner/hud.js · keys.js        HUD, rail, ▶ start; keys and gestures
-                         └─ js/frame/kiosk.js · ambient.js     idle cursor, nightly reload; room-light dimming
+                         ├─ js/planner/ panel · hud · timeline · probe · keys · share   the Planner's UI
+                         └─ js/frame/ presets · cycle · button · overlay · kiosk · ambient   the Frame's
    js/engine/ config.js · state.js · projection.js · paths.js · format.js · show.js · input.js are leaves everyone imports.
 ```
 
 ## 1. Boot and state
 
-**`index.html`** — the skeleton: a `#map` with three stacked layers (the photo SVG, the streak canvas, the drawing
-SVG), the two HUD corners, the two dimming overlays and the rail. Nothing else; everything is filled by JS.
+**`index.html`** — the Planner's skeleton: a `#map` with three stacked layers (the photo SVG, the streak canvas, the
+drawing SVG) and the HUD corners inside it, the panel, the timeline strip, the footer line and the settings sheet.
+Everything is filled by JS. `frame/index.html` is the Frame's: the map, three labels, a scrim and the fade layers.
 
 **`css/engine.css`** — one dark palette in `:root` (white ink on black; the photos are dark-toned and a dark ground
 avoids a white flash on the nightly reload), the map layers, the swimmer's classes, the `no-swimmer / no-streaks`
 switches and the kiosk cursor rule. Four custom properties are set from config at boot (`--photo-filter`,
-`--route-done-w`, `--swimmer-r`, `--ui-scale`). **`css/app.css`** — this app's HUD/rail/legend typography, the
-`no-ui` switch and the ambient dimming overlays.
+`--route-done-w`, `--swimmer-r`, `--ui-scale`). **`css/planner.css`** — the Planner's panel, HUD corners, timeline and
+sheet (a bottom sheet on phones); **`css/frame.css`** the Frame's labels and fades.
 
-**`js/main.js`** — this app's entry (30 lines): `boot()` the engine, create the HUD, bind the keys, kiosk mode when
-`?kiosk=1`, hook `onTick` for the rail's elapsed/speed, `activateFirst()`, then the ambient dimmer on the frame.
+**`js/planner/main.js`** — the Planner's entry: settings from `localStorage` (`plan.settings`: units, layers, the
+advanced physics knobs) as a CONFIG override, `boot()`, direction twins for every one-way or loop swim
+(`reverseRoute`, unless `routes.json` names one with `reverseOf`), then the HUD, panel, timeline, probe and keys.
 
 **`js/engine/boot.js`** — boots the engine for a page. Parses the URL flags; composes `CONFIG` (defaults ← the
 world's patch ← the app's `overrides` ← URL flags, re-applied after every world switch); sizes the view (`applyView`:
@@ -85,7 +87,7 @@ the cove, 150 m in the Bay — with any point that would land on shore kept in p
 heading, so the swimmer's position and heading are continuous at any tempo.
 
 **`js/engine/tide.js`** — `TideSeries`: NOAA hi/lo extremes → the rate of rise/fall by cosine interpolation (what the
-cove's fill/drain needs), `covers`, `merge` (bundle + cache + live).
+cove's fill/drain needs), `heightAt`, `next` (the next extreme), `covers`, `merge` (bundle + cache + live).
 
 **`js/engine/current.js`** — `CurrentSeries` (station vectors over time, from live samples or a compact year bundle) and
 the **cove field**: `prepare(t)` fetches the outside current (live window → bundle → derived from the tide) and the
@@ -134,15 +136,23 @@ trails fading on a transparent canvas, dead ones respawning in water cells; seed
 Open-Meteo wind), the Pacific-time helpers (station times are Pacific local; the app renders Pacific regardless of
 the device), the localStorage cache, the bundle loader and the climatology lookup.
 
-**`js/planner/hud.js`** — the HUD (clock — "current", the scrubbed time, or "swimming · time" — water, current with
-its `≈` and `· alcatraz`, wind) and the rail (name, distance in yards or miles, total, elapsed, speed, "too much
-current", best/next, the ▶ start button); `startStop()` for the button and the space bar.
+**`js/planner/hud.js`** — the map's corners: wordmark, spot, the clock line ("current", the selected time, or
+"swimming · time"), water (°F/°C), the current with `≈` and its station, wind, the tide (height now, next high/low).
 
-**`js/planner/keys.js`** — `bindControls`: keys (arrows with the accelerating hold, routes, `space` start/pause, `i`
-icon, `[` `]` tempo, `-` `+` pace, the switches) and the tap/swipe gestures.
+**`js/planner/panel.js`** — the panel: spot buttons, the swim list (one entry per swim; twins reached by the direction
+toggle), start (datetime in Pacific via `localToEpoch`, now, ±), pace (`parsePace` in the chosen units, presets,
+*Advanced*: sprint reserve, swept floor → CONFIG.swim + `bumpData`), the result card (distance, time, finish, the
+strongest current met — sampled along the profile — swept note, best/next, elapsed/speed, ▶ preview + tempo slider),
+copy link, the settings/about sheet (units, layers, keys, sources, disclaimer). `startStop()` for ▶ and the space bar.
 
-**`js/engine/format.js`** · **`show.js`** · **`input.js`** — number formatting (times, yards/miles, pace per 100 yd);
-the a/s/u switches (`state.show` → html classes); when a person last touched the app (the kiosk reads it).
+**`js/planner/timeline.js`** — the 48-h strip from the selected day's midnight: reference current every 6 min
+(flood up / ebb down), slack ticks, night from `sun.js`, the swim bar (red from the swept point), now, the playhead;
+drag or tap sets the start. **`probe.js`** — the current under the pointer (hover / tap) at `displayTime()`.
+**`keys.js`** — the keys. **`share.js`** — the plan as a URL (`planUrl`) and units from a link (`readPlan`).
+
+**`js/engine/format.js`** · **`show.js`** · **`input.js`** · **`sun.js`** — number formatting in the chosen units
+(`setUnits`: yards/miles or metres/km, pace per 100 yd or m, °F/°C); the switches (`state.show` → html classes); when a
+person last touched the app; sunrise, sunset and civil twilight (NOAA's algorithm).
 
 **`js/frame/kiosk.js`** — `kioskMode` (idle cursor, drift back to current, wake lock, the nightly reload).
 

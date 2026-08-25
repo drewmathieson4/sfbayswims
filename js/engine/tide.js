@@ -27,6 +27,14 @@ export class TideSeries {
     return (c.h - a.h) * (Math.PI / 2) * Math.sin(Math.PI * tau) / (c.t - a.t) * 3600e3;
   }
   rateMps(t) { return this.rateAt(t) * 0.3048 / 3600; }
+  /** feet above datum (cosine between the extremes) */
+  heightAt(t) {
+    const b = this._bracket(t); if (!b) return null;
+    const a = this.hilo[b[0]], c = this.hilo[b[1]], tau = Math.max(0, Math.min(1, (t - a.t) / (c.t - a.t)));
+    return a.h + (c.h - a.h) * (1 - Math.cos(Math.PI * tau)) / 2;
+  }
+  /** the next extreme after t: { t, h, type: 'H' | 'L' } */
+  next(t) { return this.hilo.find(e => e.t > t) || null; }
   static merge(a, b) {
     if (!a) return b; if (!b) return a;
     const byT = new Map();
