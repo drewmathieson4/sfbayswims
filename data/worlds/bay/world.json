@@ -44,10 +44,10 @@
    "routePadM": 500
   },
   "anim": {
-   "speedup": 60
+   "speedup": 150
   },
   "trace": {
-   "crumbEveryS": 90,
+   "crumbEveryS": 180,
    "tailS": 240
   },
   "particles": {

@@ -1,9 +1,10 @@
 # Aquatic Park — swim conditions
 
 An aerial view of Aquatic Park Cove (San Francisco) showing the tidal current as drifting streaks, the water
-temperature, and five swim routes. For each route a swimmer loops the course at time-compressed speed while the
-rail shows the distance and the estimated time *under the conditions at the selected moment*. Hold an arrow key to
-travel through the coming days and watch the estimates and the streaks change.
+temperature, and five swim routes. For each route the rail shows the distance and the estimated time *under the
+conditions at the selected moment*; **▶ start** sends a swimmer round the course at time-compressed speed, and while
+they swim the clock, the streaks and the current reading follow *them* — a long swim shows the tide turning under the
+swimmer. Hold an arrow key to travel through the coming days and watch the estimates and the streaks change.
 
 A second view (`v`), **San Francisco Bay**, zooms out to the Golden Gate → Bay Bridge with the long swims — Alcatraz,
 Escape from Alcatraz, the Golden Gate, Golden Gate → Aquatic Park, Bridge to Bridge both ways, Round Angel Island,
@@ -24,7 +25,9 @@ open http://localhost:8000
 **Controls:** tap / click the map (or `↓` `↑`) — next / previous route · `←` `→` — travel in time: a tap moves
 5 minutes, holding accelerates to a day every few seconds; the top-left corner reads *current* on the live clock,
 otherwise the date and time · `n` / `Esc` — back to current · **`v`** — switch view (each view remembers its
-route) · `space` — pause the swimmer · `i` — swimmer glyph ↔ white dot with a beacon · `[` `]` — animation slower /
+route) · **▶ start** in the rail, or `space` — start the swim; again to pause / resume (the top-left clock then reads
+*swimming · 11:22pm*, the swimmer's own moment, until the finish returns everything to *current*; changing the route,
+view or time stops the swim) · `i` — swimmer glyph ↔ white dot with a beacon · `[` `]` — animation slower /
 faster (the multiplier shows next to *elapsed*) · `-` `+` — pace ±1 s per 100 yd · `a` `s` `u` — swimmer / streaks /
 UI overlay on or off · `p` — photo mode (swimmer and overlay off together) · `d` — debug overlay (current arrows,
 stations; add `?mask=1` for the water mask) · `h` — hide the controls legend in the bottom-right corner (it never
@@ -78,7 +81,9 @@ one honest number — the Opening (cove) or the Alcatraz station (Bay).
 pace (1:45/100 m) can't hold the line they sprint at 1:00/100 m from a 60 s reserve that refills while swimming
 easy — a short strong stretch is swum through and the route is simply feasible. A route shows `—` only when even
 sprinting can't complete it; then the swimmer fights the current while the reserve lasts, tires, is carried off and
-fades, and starts again. In the Bay an infeasible route also gets a 48-hour scan for the next and best start.
+fades, and returns to the start. In the Bay an infeasible route also gets a 48-hour scan for the next and best start.
+Time advances along the swim: a Bay crossing started at 8:31 pm reaches the Gate hours later, in whatever the tide
+is doing then — which is why, while a swim plays, the picture follows the swimmer rather than the clock.
 
 ## Data sources (free, key-less, called from the browser)
 

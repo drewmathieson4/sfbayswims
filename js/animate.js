@@ -1,5 +1,5 @@
 // The swimmer: the icon (a tapered glyph with stroking arms, or a dot), the swum path (comet tail or ink line),
-// breadcrumbs every crumbEveryS of swim time, and the swept-away fade. Plays back a profile from js/swim.js.
+// breadcrumbs every crumbEveryS of swim time, and the swept-away fade. Plays one swim of a profile from js/swim.js per ▶ start.
 import { CONFIG } from './config.js';
 import { state } from './state.js';
 import { el } from './map.js';
@@ -92,12 +92,15 @@ export function createSwimmer({ routeLayer, swimmerLayer, config = CONFIG }) {
     updateIcon(p, dt); updateTrace();
     icon.style.opacity = fade.toFixed(3); tailG.style.opacity = fade.toFixed(3);
   }
+  function reset() { tau = 0; hold = 0; crumbsG.innerHTML = ''; crumbCount = 0; if (profile) place(0); }   // back to the start, waiting
+  /** Advances the swim by dt real seconds; true once the lap is over (the end pause has run and the swimmer is back at the start). */
   function step(dt) {
-    if (!profile) return;
-    if (hold > 0) { hold -= dt; if (hold <= 0) { tau = 0; crumbsG.innerHTML = ''; crumbCount = 0; } }
+    if (!profile) return false;
+    if (hold > 0) { hold -= dt; if (hold <= 0) { reset(); return true; } }
     else { tau += dt * config.anim.speedup * (state.tempo || 1) * (inSweep() ? (config.anim.sweptTempo || 1) : 1); if (tau >= profile.totalSeconds) { tau = profile.totalSeconds; hold = config.anim.pauseS; } }
     place(dt);
+    return false;
   }
-  return { setRoute, step, rebuild: () => { if (profile) { buildIcon(); place(0); } }, reset: () => { tau = 0; hold = 0; crumbsG.innerHTML = ''; crumbCount = 0; }, get tau() { return tau; }, get speedMps() { return speedMps; },
+  return { setRoute, step, reset, rebuild: () => { if (profile) { buildIcon(); place(0); } }, get tau() { return tau; }, get speedMps() { return speedMps; },
            get elapsed() { return profile?.sweptAt != null ? Math.min(tau, profile.sweptAt) : tau; }, get pos() { return positionAt(profile, tau); } };
 }

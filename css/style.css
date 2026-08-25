@@ -43,7 +43,7 @@ html.debug #debugcanvas { display: block; }
 .hud .sub:empty, .hud .big:empty { display: none; }
 .hud .approx { color: var(--mute); }
 
-/* rail (bottom left): route · distance · total · elapsed · note · best/next */
+/* rail (bottom left): route · distance · total · elapsed · speed · note · best/next · the ▶ start button */
 #rail { position: absolute; z-index: 5; left: 16px; bottom: 16px; min-width: 200px; letter-spacing: 0.14em; text-transform: uppercase; background: var(--panel); padding: 1em 1.2em; }
 #rail .route-name { font-size: 2em; font-weight: 600; letter-spacing: 0.08em; margin-bottom: 0.4em; }
 #rail .row { display: flex; justify-content: space-between; gap: 2em; padding: 0.25em 0; }
@@ -52,6 +52,9 @@ html.debug #debugcanvas { display: block; }
 #rail .note { color: var(--mute); padding: 0.25em 0; }
 #rail .note:empty, #rail .win:empty { display: none; }
 #rail .v { font-variant-numeric: tabular-nums; }
+#rail #start { display: block; width: 100%; margin-top: 0.5em; padding: 0.6em 0 0.1em; border: 0; border-top: 1px solid var(--ink); background: none; color: var(--ink); font: inherit; letter-spacing: inherit; text-transform: inherit; text-align: left; cursor: pointer; }
+#rail #start:hover { color: var(--mute); }
+#rail #start:focus-visible { outline: 1px solid var(--mute); outline-offset: 2px; }
 
 /* controls legend (bottom right): hidden with the overlay (u), by h, and always in kiosk mode */
 .hud.br { bottom: 16px; right: 16px; }

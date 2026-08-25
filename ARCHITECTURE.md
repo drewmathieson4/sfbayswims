@@ -36,14 +36,14 @@ mount. The other world is preloaded 5 s after boot so the switch is instant. `wi
 services for the console and the test hooks.
 
 **`js/config.js`** — every tunable, with a comment each. The cove *is* the defaults; `data/worlds/bay/world.json →
-config` patches this object in place (origin, view, 60× tempo, particles, `dotR`). Sections: pace, origin/view/grid,
+config` patches this object in place (origin, view, 150× tempo, particles, `dotR`). Sections: pace, origin/view/grid,
 stations, `current` (the cove model + the flood/ebb axis the Bay uses), `swim` (floor, sprint), particles, `anim`
 (tempo, the swept-away timings, the thrash), `scrub` (time travel), refresh, kiosk, ambient, offlineHint, photo,
 route, swimmer, trace, show, hud, `debugCurrentKn` (`?kn=`).
 
-**`js/state.js`** — a 30-line observable store: `state` (the clock, `selectedTime` while time-travelling, route,
+**`js/state.js`** — a 30-line observable store: `state` (the clock, `selectedTime` while time-travelling, `swimming` + `swimAt`, route,
 pace, show-flags, the fitted view, live data with a `version`, the physics results), `set(patch)` notifying
-`on(key)` listeners, `effectiveTime()` (selected or now), `physicsTime()` (per minute), `bumpData()` (bumps the
+`on(key)` listeners, `effectiveTime()` (selected or now), `displayTime()` (the swimmer's moment while a swim plays, else that), `physicsTime()` (per minute), `bumpData()` (bumps the
 version so the fields drop their cached frame).
 
 **`js/world.js`** — worlds. `loadWorld(id)` fetches the folder in parallel (world.json, landmarks, routes,
@@ -96,13 +96,17 @@ swept route, appends `sweepFrom`: a fight (sprinting into the current while the 
 currents, water temperature with its fallback chain, wind), the kiosk's offline hint. Per world: `mount`/`unmount`
 (particles + swimmer). Physics: `markDirty` (120 ms debounce) → `recompute()` re-integrates every route at the
 current minute, hands the selected route's profile to the swimmer, and — for an infeasible Bay route — schedules
-the memoised 48-h scan. The rAF loop (optionally fps-capped) steps the streaks and the swimmer. The debug overlay
+the memoised 48-h scan. The rAF loop (optionally fps-capped) steps the streaks at `displayTime()` and, while a swim plays
+(`state.swimming` — ▶ start / space; any route, view, pace or time change stops it), the swimmer, publishing their
+moment as `state.swimAt` so the clock, the current reading and the streaks follow the swim; a swim keeps its start
+minute until it ends. The debug overlay
 (`d`) draws current arrows and station dots on a canvas created on demand. `?frames=` / `stepFrames()` are the test
 hooks for an occluded tab.
 
 **`js/animate.js`** — the swimmer: the tapered glyph (or a dot) rotated to the crab heading, arms stroking at a
 rate that rises with `effort`, the comet tail or ink line, breadcrumbs every `crumbEveryS` (appended, not
-rebuilt), and the swept-away playback: fight at full opacity, then fade, pause, restart.
+rebuilt), and the swept-away playback: fight at full opacity, then fade, pause; `step()` then reports the lap over and the
+swimmer waits at the start.
 
 **`js/particles.js`** — the streaks: N particles (sized to the water area in view) stepping with the field,
 trails fading on a transparent canvas, dead ones respawning in water cells; seedable for reproducible frames.
@@ -115,9 +119,9 @@ trails fading on a transparent canvas, dead ones respawning in water cells; seed
 Open-Meteo wind), the Pacific-time helpers (station times are Pacific local; the app renders Pacific regardless of
 the device), the localStorage cache, the bundle loader and the climatology lookup.
 
-**`js/ui.js`** — the HUD (clock/"current", water, current with its `≈` and `· alcatraz`, wind) and the rail
-(name, distance in yards or miles, total, elapsed, "too much current", best/next); `applyShow` for the switches;
-`bindControls` (keys — arrows with the accelerating hold, routes, `i` icon, `[` `]` tempo, `-` `+` pace — tap/swipe); `kioskMode` (idle cursor, drift back to
+**`js/ui.js`** — the HUD (clock — "current", the scrubbed time, or "swimming · time" — water, current with its `≈` and `· alcatraz`, wind) and the rail
+(name, distance in yards or miles, total, elapsed, speed, "too much current", best/next, the ▶ start button); `applyShow` for the switches;
+`bindControls` (keys — arrows with the accelerating hold, routes, `space` start/pause, `i` icon, `[` `]` tempo, `-` `+` pace — tap/swipe); `kioskMode` (idle cursor, drift back to
 current, wake lock, the nightly reload).
 
 **`js/ambient.js`** — kiosk only: polls `/ambient.json` (the Pi's light sensor) and eases a black overlay and a
