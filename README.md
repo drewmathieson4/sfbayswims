@@ -40,8 +40,9 @@ tide with the next high or low. A **daylight** row shows sunrise–sunset and fl
 finishes after dusk. **Legs** (key `l`) breaks the swim down waypoint to waypoint — distance, time, pace, the current
 along (+ helps) and across — and the route on the map is coloured by ground speed (red where the swimmer crawls, green
 where the current helps; hover a row to highlight its leg). **Best starts** searches, on request, this swim or every
-swim over the next *n* tide cycles, or a chosen date: starts every 15 minutes ranked fastest first with the finish time,
-the slack relation and a daylight flag; filters for daylight, maximum duration and weekends; click one to plan it.
+swim over the next *n* tide cycles, or a chosen date: the best start in each tide cycle (a start within half an hour
+of it is nearly as good), in time order with the finish time, the slack relation and a daylight flag, the fastest in
+bold; filters for daylight, maximum duration and weekends; click one to plan it.
 **Saved plans** keep favourites in the browser. The **timeline** shows the reference current for 48 hours (flood above
 the axis, ebb below), the tide height (dashed), slack times, night, the swim as a bar (red where swept) and *now*. Hover (or tap on a phone) anywhere on the
 water for the current at that point and moment. *copy link* puts the whole plan in the URL; *settings · about* has

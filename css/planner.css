@@ -76,6 +76,7 @@ details .row.filters { gap: 1em; font-size: 0.9em; } .filters label { display: f
 .list button.bs, .list button.fav { display: grid; grid-template-columns: 1fr auto; gap: 0 0.8em; text-align: left; }
 .list button.bs .rel, .list button.fav .d { grid-column: 1 / -1; color: var(--mute); font-size: 0.85em; }
 .list button.bs em { color: #ffd27a; font-style: normal; }
+.list button.bs.best .s { color: var(--ink); font-weight: 600; }
 .list button.fav .x { color: var(--mute); }
 #svg #speed line { stroke-width: 3px; vector-effect: non-scaling-stroke; opacity: 0.85; stroke-linecap: round; }
 #svg #speed.dim line { opacity: 0.25; } #svg #speed line.hi { opacity: 1; stroke-width: 6px; }

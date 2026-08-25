@@ -153,7 +153,7 @@ drag or tap sets the start. **`probe.js`** — the current under the pointer (ho
 **`legs.js`** — the legs table (segments between named waypoints from the physics legs; the current along/across sampled
 over each) and the route coloured by ground speed on the map. **`starts.js`** — best starts: `scanStarts` in chunks
 over the next n tide cycles (745 min each, every 15 min) or a date, for this swim or every swim from `routes.json`,
-ranked, filtered (daylight via `sun.js`, duration, weekends), with `slackNear` for the slack relation; memoised.
+one per cycle (the fastest within ±half a cycle), filtered (daylight via `sun.js`, duration, weekends), with `slackNear` for the slack relation; memoised.
 
 **`js/engine/format.js`** · **`show.js`** · **`input.js`** · **`sun.js`** — number formatting in the chosen units
 (`setUnits`: yards/miles or metres/km, pace per 100 yd or m, °F/°C); the switches (`state.show` → html classes); when a

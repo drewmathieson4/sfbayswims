@@ -1,6 +1,7 @@
 // Best starts, on request: this swim over the next n tide cycles, every swim over n cycles, or a chosen date — starts
-// every 15 min ranked fastest first, with the finish, daylight and the slack relation; filters for daylight, duration
-// and weekends. Computed in chunks so the page stays alive; memoised per swim / pace / data.
+// every 15 min, then one per tide cycle: the local optimum (the fastest start within half a cycle either side), listed
+// in time order with the finish, daylight and the slack relation; a start within half an hour of one is nearly as good.
+// Filters for daylight, duration and weekends. Computed in chunks so the page stays alive; memoised per swim / pace / data.
 import { CONFIG } from '../engine/config.js';
 import { state, set, on, physicsTime } from '../engine/state.js';
 import { tzParts, localToEpoch, fmtTime, fmtDate } from '../engine/data.js';
@@ -43,9 +44,10 @@ export function createStarts({ b }) {
       const res = await scanRoute(r, ts, token); if (!res) { btn.disabled = false; prog.hidden = true; return; }
       prog.value += ts.length;
       const good = res.filter(e => e.feasible).map(e => ({ ...e, r, finish: e.t + e.s * 1000, day: isDay(e.t, e.t + e.s * 1000) })).filter(filters);
-      good.sort((a, c) => a.s - c.s || (c.day - a.day) || a.t - c.t);
-      if (scope.value === 'all') { if (good[0]) rows.push(good[0]); }
-      else rows.push(...good.slice(0, 12));
+      const HALF = CYCLE / 2;                                                    // one per tide cycle: the local optimum
+      const peaks = good.filter(e => !good.some(o => o !== e && Math.abs(o.t - e.t) < HALF && (o.s < e.s || (o.s === e.s && o.t < e.t)))).sort((a, c) => a.t - c.t);
+      if (scope.value === 'all') { const best = peaks.slice().sort((a, c) => a.s - c.s)[0]; if (best) rows.push(best); }
+      else rows.push(...peaks);
     }
     if (scope.value === 'all') rows.sort((a, c) => a.s - c.s);
     prog.hidden = true; btn.disabled = false;
@@ -54,10 +56,11 @@ export function createStarts({ b }) {
   function render(rows, tried) {
     out.innerHTML = '';
     if (!rows.length) { out.textContent = `no start fits (${tried} tried)`; return; }
+    const fastest = rows.reduce((a, c) => (c.s < a.s ? c : a));
     for (const e of rows) {
       const slack = live.field ? slackNear(live.field, e.t) : null;
       const rel = slack ? `${Math.abs(slack.minutes)} min ${slack.minutes >= 0 ? 'after' : 'before'} slack` : '';
-      const row = document.createElement('button'); row.type = 'button'; row.className = 'bs';
+      const row = document.createElement('button'); row.type = 'button'; row.className = 'bs' + (e === fastest && rows.length > 1 ? ' best' : '');
       row.innerHTML = `<span class="w">${fmtWhen(e.t)}${scope.value === 'all' ? ` · ${e.r.name}` : ''}</span><span class="s">${fmtMMSS(e.s)} · ${fmtTime(e.finish)}${e.day ? '' : ' · <em>dark</em>'}</span><span class="rel">${rel}</span>`;
       row.onclick = () => { if (state.routeId !== e.r.id) set({ routeId: e.r.id }); set({ selectedTime: e.t }); };
       out.appendChild(row);
