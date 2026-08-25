@@ -82,6 +82,17 @@ details .row.filters { gap: 1em; font-size: 0.9em; } .filters label { display: f
 #svg #speed.dim line { opacity: 0.25; } #svg #speed line.hi { opacity: 1; stroke-width: 6px; }
 #tl .height { fill: none; stroke: rgba(255, 255, 255, 0.55); stroke-width: 1; stroke-dasharray: 3 3; }
 
+/* draw a swim */
+.draw-tools { margin-top: 0.6em; }
+#draw-bar { margin-top: 0.6em; padding: 0.6em; border: 1px dashed var(--line); border-radius: 8px; }
+#draw-bar .warn { color: #ffb4a2; font-size: 0.9em; }
+#draw-name { flex: 1; min-width: 8em; }
+html.drawing #map { cursor: crosshair; }
+html.drawing #probe { display: none; }
+#svg #draw circle { fill: #fff; stroke: #000; stroke-width: 1.5px; cursor: grab; vector-effect: non-scaling-stroke; }
+#svg #draw circle:active { cursor: grabbing; }
+html.drawing #svg { touch-action: none; }
+
 /* the timeline strip */
 #timeline { position: absolute; z-index: 7; left: 0; right: 0; bottom: 0; height: var(--tl-h); background: rgba(8, 8, 8, 0.96); border-top: 1px solid var(--line); touch-action: none; cursor: ew-resize; }
 #tl { width: 100%; height: 100%; display: block; }
