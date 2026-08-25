@@ -13,6 +13,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 const presets = await loadPresets(params);
 const sw = loadSwitches(presets);                                           // { swimmer, overlay, streaks, world }
 html.style.setProperty('--current', `rgba(255, 255, 255, ${presets.streakAlpha})`);   // the streak ink; particles read it at creation
+html.style.setProperty('--scrim', presets.labelScrim);                               // the vignette behind the top labels (0 = none)
 
 /** The presets as a CONFIG patch — re-applied after every world's config, so it must be idempotent. */
 const overrides = [C => {

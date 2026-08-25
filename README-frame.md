@@ -91,7 +91,7 @@ stays on for debugging). `lsusb` on the Pi lists it as a keyboard.
   in git; survives `install.sh`), then URL flags (`?view=bay&swimmer=0&swimSeconds=30&pace=1:40`). Keys: `view`
   (`cove` | `bay` | `alternate` + `alternateEveryMin`), the three switches, `pace`, `swimSeconds`, `holdSeconds`,
   `fadeSeconds`, `restSeconds`, `sweptSeconds`, `skipInfeasible`, `streaksFollowSwimmer`, `routes` (per view, an
-  id list or `null` = all), `crumbsPerSwim` (per view), `icon` (`glyph` | `beacon`), `streakAlpha`, `maxFps`,
+  id list or `null` = all), `crumbsPerSwim` (per view), `icon` (`glyph` | `beacon`), `streakAlpha`, `labelScrim` (the vignette behind the top labels, 0–1), `maxFps`,
   `quietHours` (`{ "from": "23:00", "to": "06:00", "mode": "still" | "dark" }`), `persistSwitches`,
   `resetDaily`, `ambient`, `reloadAt`.
 - Live data refreshes on the app's own schedule; with no network it keeps animating from the

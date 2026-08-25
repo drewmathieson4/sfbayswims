@@ -16,6 +16,7 @@
  "crumbsPerSwim": { "cove": 50, "bay": 50 },
  "icon": "glyph",
  "streakAlpha": 0.18,
+ "labelScrim": 0.45,
  "maxFps": 30,
  "quietHours": null,
  "persistSwitches": true,
