@@ -12,6 +12,7 @@ export function createSwimmer({ routeLayer, swimmerLayer, config = CONFIG }) {
   const icon = el('g', { class: 'icon' }, swimmerLayer);
   let profile = null, tau = 0, hold = 0, armPhase = 0, crumbCount = 0, parts = {}, iconKey = '';
   let panic = 0;                                         // effort from the physics: 0 cruising · 0.5 sprint · 1 fighting · 0.3 carried
+  let play = {};                                         // per-swim playback from setRoute(prof, opts): rate, sweptRate, crumbEveryS, tailS (null = config)
   const R = () => config.route.dotR, S = () => config.swimmer.size;
 
   // ---- icon ----
@@ -60,7 +61,7 @@ export function createSwimmer({ routeLayer, swimmerLayer, config = CONFIG }) {
     else if (tr.mode === 'ink') { tailG.style.display = 'none'; done.style.display = ''; done.setAttribute('d', pathBetween(0, tau)); }
     else {                                              // comet: N segments fading behind the swimmer
       done.style.display = 'none'; tailG.style.display = '';
-      const N = tr.tailSegments, span = Math.min(tau, tr.tailS);
+      const N = tr.tailSegments, span = Math.min(tau, play.tailS ?? tr.tailS);
       while (tailG.children.length < N) el('path', {}, tailG);
       for (let k = 0; k < N; k++) {
         const seg = tailG.children[k], t1 = tau - span * k / N, t0 = tau - span * (k + 1) / N;
@@ -70,14 +71,30 @@ export function createSwimmer({ routeLayer, swimmerLayer, config = CONFIG }) {
         seg.style.opacity = (0.15 + 0.85 * f).toFixed(3); seg.style.strokeWidth = (config.route.doneWidth * (0.4 + 0.6 * f)).toFixed(2) + 'px';
       }
     }
-    if (!tr.crumbs) { crumbsG.style.display = 'none'; return; }
+    const every = play.crumbEveryS ?? tr.crumbEveryS;
+    if (!tr.crumbs || !isFinite(every)) { crumbsG.style.display = 'none'; return; }
     crumbsG.style.display = '';
-    const n = Math.floor(tau / tr.crumbEveryS);          // one crumb per crumbEveryS: append the new ones, clear on restart
+    const n = Math.floor(tau / every);                   // one crumb per `every` swim seconds: append the new ones, clear on restart
     if (n < crumbCount) { crumbsG.innerHTML = ''; crumbCount = 0; }
-    for (; crumbCount < n; crumbCount++) { const c = positionAt(profile, (crumbCount + 1) * tr.crumbEveryS); el('circle', { cx: c.x.toFixed(1), cy: (-c.y).toFixed(1), r: (R() * 0.32).toFixed(2) }, crumbsG); }
+    for (; crumbCount < n; crumbCount++) { const c = positionAt(profile, (crumbCount + 1) * every); el('circle', { cx: c.x.toFixed(1), cy: (-c.y).toFixed(1), r: (R() * 0.32).toFixed(2) }, crumbsG); }
   }
 
-  function setRoute(prof) { profile = prof.profile; tau = Math.min(tau, profile.totalSeconds); crumbsG.innerHTML = ''; crumbCount = 0; buildIcon(); place(0); }
+  /**
+   * Plays this profile. opts (the frame): realSeconds — the swim (up to the swept point) lasts this many real seconds;
+   * sweptRealSeconds — the fight + drift last this long; crumbsPerSwim — N crumbs over the swim (0 = none); tailFrac —
+   * the comet tail as a fraction of the swim. Without opts the config's tempo, crumbEveryS and tailS apply.
+   */
+  function setRoute(prof, opts = null) {
+    profile = prof.profile; tau = Math.min(tau, profile.totalSeconds); crumbsG.innerHTML = ''; crumbCount = 0;
+    const T = profile.totalSeconds, sw = profile.sweptAt, swim = sw ?? T;
+    play = {
+      rate: opts?.realSeconds ? swim / opts.realSeconds : null,
+      sweptRate: opts?.sweptRealSeconds && sw != null ? (T - sw) / opts.sweptRealSeconds : null,
+      crumbEveryS: opts?.crumbsPerSwim != null ? (opts.crumbsPerSwim > 0 ? swim / opts.crumbsPerSwim : Infinity) : null,
+      tailS: opts?.tailFrac ? swim * opts.tailFrac : null,
+    };
+    buildIcon(); place(0);
+  }
   const inSweep = () => profile.sweptAt != null && tau > profile.sweptAt;
   let speedMps = 0;                                      // ground speed at the swimmer's position (the rail's "speed")
   function place(dt) {
@@ -97,7 +114,11 @@ export function createSwimmer({ routeLayer, swimmerLayer, config = CONFIG }) {
   function step(dt) {
     if (!profile) return false;
     if (hold > 0) { hold -= dt; if (hold <= 0) { reset(); return true; } }
-    else { tau += dt * config.anim.speedup * (state.tempo || 1) * (inSweep() ? (config.anim.sweptTempo || 1) : 1); if (tau >= profile.totalSeconds) { tau = profile.totalSeconds; hold = config.anim.pauseS; } }
+    else {
+      const base = play.rate ?? config.anim.speedup * (state.tempo || 1);
+      tau += dt * (inSweep() ? (play.sweptRate ?? base * (config.anim.sweptTempo || 1)) : base);
+      if (tau >= profile.totalSeconds) { tau = profile.totalSeconds; hold = config.anim.pauseS; }
+    }
     place(dt);
     return false;
   }

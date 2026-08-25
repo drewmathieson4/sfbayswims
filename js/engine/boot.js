@@ -15,8 +15,9 @@ const $ = id => document.getElementById(id);
  * @param firstWorld  ids => id | null — the app's preferred first world when the URL names none
  * @param onActivate  world => void — after each world is mounted (titles, memory)
  * @param dom         { mapEl, svg, photoSvg, photoImg, canvas, hintEl } (default: the standard ids)
+ * @param runtime     extra options for runtime.start (playOptions, windowScan, followSwimmer)
  */
-export async function boot({ params = new URLSearchParams(location.search), overrides = [], firstWorld = null, onActivate = null, dom = null } = {}) {
+export async function boot({ params = new URLSearchParams(location.search), overrides = [], firstWorld = null, onActivate = null, dom = null, runtime = {} } = {}) {
 
   const html = document.documentElement;
   const flag = k => params.has(k) && params.get(k) !== '0';
@@ -77,7 +78,7 @@ export async function boot({ params = new URLSearchParams(location.search), over
   if (params.has('t')) { const t = Date.parse(params.get('t')); if (!isNaN(t)) set({ selectedTime: t }); }
 
   window.APP = { state, CONFIG, index, live };           // for the console and the test hooks
-  const services = await start({ canvas, mapEl, params, onResize, live, hintEl: d.hintEl });
+  const services = await start({ canvas, mapEl, params, onResize, live, hintEl: d.hintEl, ...runtime });
 
   function activate(data) {
     const world = buildWorld(data, env, services.refs);

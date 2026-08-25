@@ -143,6 +143,16 @@ the a/s/u switches (`state.show` → html classes); when a person last touched t
 
 **`js/frame/kiosk.js`** — `kioskMode` (idle cursor, drift back to current, wake lock, the nightly reload).
 
+**The Frame** (`frame/index.html`, `css/frame.css`, `js/frame/main.js`) — boots the engine with the presets as a
+CONFIG override and `runtime: { playOptions, windowScan: 'infeasible', followSwimmer }`. **`presets.js`** loads
+`data/frame.json` ← `frame.local.json` ← URL flags and persists the switches; **`cycle.js`** plays the view's swims
+in turn (each re-integrated at the current minute, scaled by `playOptions` to `swimSeconds`; finish → `html.fading`
+(hold + fade in CSS) → the runtime's end pause resets the swimmer unseen → rest → next; quiet hours; a once-a-second
+watchdog); **`button.js`** decodes click / double / triple / hold from the Pico's held `b`, the space bar or the
+pointer; **`overlay.js`** renders the title, the conditions line at `displayTime()` and the caption. `animate.js`
+takes per-swim play options (`realSeconds`, `sweptRealSeconds`, `crumbsPerSwim`, `tailFrac`) from
+`setRoute(prof, opts)`.
+
 **`js/frame/ambient.js`** — kiosk only: polls `/ambient.json` (the Pi's light sensor) and eases a black overlay and a
 warm tint so the frame dims like a print as the room darkens.
 

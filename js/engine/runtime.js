@@ -10,7 +10,11 @@ import { createParticles } from './particles.js';
 import { integrateRoute, scanWindows } from './swim.js';
 import { createSwimmer } from './animate.js';
 
-export async function start({ canvas, mapEl, params, onResize, live, hintEl = null }) {
+/**
+ * playOptions(res, route) → opts for swimmer.setRoute (the frame scales every swim); windowScan 'infeasible' | 'off' overrides
+ * the world's ui.windowScan; followSwimmer false keeps the picture at now while a swim plays.
+ */
+export async function start({ canvas, mapEl, params, onResize, live, hintEl = null, playOptions = null, windowScan = null, followSwimmer = true }) {
   const offline = params.has('offline');
   const seed = params.has('seed') ? +params.get('seed') : null;
   const frames = params.has('frames') ? +params.get('frames') : null;   // test hook: render N frames, then freeze
@@ -91,7 +95,7 @@ export async function start({ canvas, mapEl, params, onResize, live, hintEl = nu
   // ---- the swim: one lap per ▶ start (state.swimming). While it plays the picture follows the swimmer's moment (state.swimAt):
   // the streaks, the HUD current and the clock read displayTime(); the swim keeps its start minute until it ends.
   on('swimming', v => {
-    if (v) { if (dirty) recomputeSafe(); state.swimAt = state.physics?.at ?? null; }
+    if (v) { if (dirty) recomputeSafe(); state.swimAt = followSwimmer ? state.physics?.at ?? null : null; }
     else { swimmer?.reset(); state.swimAt = null; minuteTick(); }             // catch up on the minutes that passed meanwhile
   });
   const stopSwim = () => set({ swimming: false, paused: false });
@@ -104,12 +108,12 @@ export async function start({ canvas, mapEl, params, onResize, live, hintEl = nu
     for (const r of world.routes) byRoute.set(r.id, integrateRoute(r, at, state.paceMps, world.field));
     set({ physics: { at, byRoute, ms: performance.now() - t0 } });
     const r = world.routes.find(x => x.id === state.routeId) || world.routes[0];
-    swimmer.setRoute(byRoute.get(r.id));
+    swimmer.setRoute(byRoute.get(r.id), playOptions?.(byRoute.get(r.id), r));
     scheduleScan(r, byRoute.get(r.id));
   }
   // the 48-h feasibility scan: only for infeasible routes, memoised per half hour (it is ~100 route integrations)
   function scheduleScan(r, res) {
-    const w = world, mode = w.world.ui?.windowScan || 'off';
+    const w = world, mode = windowScan || w.world.ui?.windowScan || 'off';
     if (mode === 'off' || res.feasible) { if (state.windows) set({ windows: null }); return; }
     clearTimeout(scanTimer);
     scanTimer = setTimeout(() => {
@@ -139,7 +143,7 @@ export async function start({ canvas, mapEl, params, onResize, live, hintEl = nu
     streaksWere = state.show.streaks;
     if (state.swimming && !state.paused) {
       if (swimmer.step(dt)) stopSwim();                                       // lap over: the swimmer is back at the start, the picture returns to now
-      else state.swimAt = state.physics ? state.physics.at + swimmer.elapsed * 1000 : null;
+      else state.swimAt = followSwimmer && state.physics ? state.physics.at + swimmer.elapsed * 1000 : null;
     }
     for (const fn of tickFns) fn(dt, false);
     if (state.debug) debug.draw({ world, particles, t: displayTime() });

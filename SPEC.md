@@ -276,5 +276,7 @@ Bay-swim start), **China Beach / Lands End** (outside the Gate; strong current, 
 
 ## Status
 
-- 2026-08-25 — Phase 0 (rename) and Phase 1 (engine split, `js/engine/`) done on branch `engine-split`; the
-  combined app at `/` still serves as it did. Next: Phase 2, the Frame at `frame/`.
+- 2026-08-25 — Phase 0 (rename) and Phase 1 (engine split, `js/engine/`) merged; the combined app at `/` still
+  serves as it did.
+- 2026-08-25 — Phase 2, the Frame at `frame/` (branch `frame`): cycle, button decoder, overlay, presets,
+  transitions, Pi kit (kiosk URL, Pico `b`). Next: Phase 3, the Planner at `/`.

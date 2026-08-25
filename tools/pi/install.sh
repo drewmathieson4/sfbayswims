@@ -25,7 +25,7 @@ if [ "$WITH_COMITUP" = 1 ]; then apt-get install -y -qq comitup >/dev/null || { 
 say "app → $APP (generated bundles are kept)"
 mkdir -p "$APP"
 rsync -a --delete --exclude .git --exclude venv --exclude __pycache__ --exclude .DS_Store \
-  --exclude 'data/tides-*.json' --exclude 'data/currents-*.json' --exclude 'data/worlds/*/currents-*.json' "$SRC/" "$APP/"
+  --exclude 'data/tides-*.json' --exclude 'data/currents-*.json' --exclude 'data/worlds/*/currents-*.json' --exclude 'data/frame.local.json' "$SRC/" "$APP/"
 rsync -a --ignore-existing "$SRC/data/" "$APP/data/"          # bundles from the checkout, never overwriting December's
 chown -R "$USER_NAME:$USER_NAME" "$APP"; chmod +x "$APP/tools/serve.py" "$PI"/*.sh "$PI"/*.py
 
