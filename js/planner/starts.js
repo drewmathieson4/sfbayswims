@@ -1,7 +1,7 @@
 // Best starts, on request: this swim over the next n tide cycles, every swim over n cycles, or a chosen date — starts
 // every 15 min, then one per tide cycle: the local optimum (the fastest start within half a cycle either side), listed
 // in time order with the finish, daylight and the slack relation; a start within half an hour of one is nearly as good.
-// Filters for daylight, duration and weekends. Computed in chunks so the page stays alive; memoised per swim / pace / data.
+// Filters: daylight (the whole swim between sunrise and sunset), duration and weekends. Computed in chunks so the page stays alive; memoised per swim / pace / data.
 import { CONFIG } from '../engine/config.js';
 import { state, set, on, physicsTime } from '../engine/state.js';
 import { tzParts, localToEpoch, fmtTime, fmtDate } from '../engine/data.js';
@@ -19,7 +19,8 @@ export function createStarts({ b }) {
   const yieldNow = () => new Promise(r => setTimeout(r, 0));
   const listed = () => (live.routes || []).filter(r => !r.reversed);          // every swim from routes.json, both Bridge-to-Bridge directions
   const current = () => (live.routes || []).find(r => r.id === state.routeId);
-  const isDay = (t0, t1) => { const s = sunTimes(t0, CONFIG.origin.lat, CONFIG.origin.lon); return s.dawn != null && t0 >= s.dawn && t1 <= (t1 > s.dusk ? sunTimes(t0 + 86400e3, CONFIG.origin.lat, CONFIG.origin.lon).dusk ?? -Infinity : s.dusk); };
+  /** Light for the whole swim: from sunrise to sunset of the start's day (a swim can't span a night and pass). */
+  const isDay = (t0, t1) => { const s = sunTimes(t0, CONFIG.origin.lat, CONFIG.origin.lon); return s.sunrise != null && t0 >= s.sunrise && t1 <= s.sunset; };
   const isWeekend = t => { const p = tzParts(t); return [0, 6].includes(new Date(Date.UTC(p.y, p.mo - 1, p.d)).getUTCDay()); };
   function times() {
     if (date.value) { const m = /^(\d{4})-(\d\d)-(\d\d)$/.exec(date.value); if (m) { const t0 = localToEpoch(+m[1], +m[2], +m[3], 0, 0); return range(t0, t0 + 30 * 3600e3); } }

@@ -286,4 +286,7 @@ Bay-swim start), **China Beach / Lands End** (outside the Gate; strong current, 
   units, share links, probe, settings/about sheet, keys, phone layout; the legacy combined app removed.
 - 2026-08-25 — Phase 4 (branch `planner-2`): legs table + route coloured by speed, best starts (this swim / every
   swim over n tide cycles, or a date; daylight / duration / weekend filters; slack relation), daylight row, tide-height
-  line, per-swim notes, saved plans. Next: custom-drawn swims (Phase 5), then compare, calendar, lighter bundles, spots.
+  line, per-swim notes, saved plans; merged.
+- 2026-08-25 — Phase 5 (branch `custom-swims`): draw a swim (tap, snap, drag, undo, shape, name; land warning; in the
+  share link and saved plans; edit an existing swim). Next: compare two starts, the 7-day calendar, lighter Bay bundles,
+  new spots.

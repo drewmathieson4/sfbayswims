@@ -20,7 +20,7 @@ export function startStop() {
   set({ swimming: true, paused: false });
 }
 
-export function createPanel({ b, settings, saveSettings, recomputePhysics }) {
+export function createPanel({ b, settings, saveSettings, recomputePhysics, draw = null }) {
   const html = document.documentElement, live = b.live;
   const routes = () => live.routes || [];
   const listed = () => routes().filter(r => !r.reversed && !r.reverseOf);   // one entry per swim; twins reach it via the direction toggle
@@ -41,7 +41,7 @@ export function createPanel({ b, settings, saveSettings, recomputePhysics }) {
     swims.innerHTML = '';
     for (const r of listed()) {
       const btn = document.createElement('button'); btn.type = 'button';
-      btn.innerHTML = `<span>${r.name}</span><span class="d">${fmtDist(r.meters)}</span>`;
+      btn.innerHTML = `<span>${r.custom ? '✎ ' : ''}${r.name}</span><span class="d">${fmtDist(r.meters)}</span>`;
       btn.classList.toggle('on', prim?.id === r.id); btn.onclick = () => set({ routeId: r.id });
       swims.appendChild(btn);
     }
@@ -96,7 +96,7 @@ export function createPanel({ b, settings, saveSettings, recomputePhysics }) {
   }
   function renderRoute() {
     const r = current(); if (!r) return;
-    rName.textContent = r.name; rNotes.textContent = r.notes || ''; rDist.textContent = fmtDist(r.meters);
+    rName.textContent = r.name; rNotes.textContent = r.crossesLand ? 'a leg crosses land — move a point' : (r.notes || ''); rDist.textContent = fmtDist(r.meters);
     const res = state.physics?.byRoute?.get(r.id);
     if (!res) { rTotal.textContent = '…'; rEta.textContent = '…'; rMax.textContent = '…'; rSun.textContent = '…'; note.textContent = ''; renderWindows(); return; }
     const at = state.physics.at;
@@ -105,8 +105,9 @@ export function createPanel({ b, settings, saveSettings, recomputePhysics }) {
     const s = strongest(r, { ...res, at });
     rMax.textContent = s ? `${s.kn.toFixed(1)} kn${s.where ? ` · ${s.where}` : ''}` : '—';
     { const s = sunTimes(at, CONFIG.origin.lat, CONFIG.origin.lon), fin = at + res.totalSeconds * 1000;   // daylight: the swim against civil twilight
-      const dark = s.dawn != null && (at < s.dawn || (res.feasible && fin > s.dusk));
-      rSun.innerHTML = s.sunrise ? `${fmtTime(s.sunrise)} – ${fmtTime(s.sunset)}${dark ? ' <em class="warn">· in the dark</em>' : ''}` : '—'; }
+      const end = res.feasible ? fin : at + (res.profile.sweptAt ?? 0) * 1000;
+      const dark = s.dawn != null && (at < s.dawn || end > s.dusk), dim = !dark && s.sunrise != null && (at < s.sunrise || end > s.sunset);
+      rSun.innerHTML = s.sunrise ? `${fmtTime(s.sunrise)} – ${fmtTime(s.sunset)}${dark ? ' <em class="warn">· in the dark</em>' : dim ? ' <em class="warn">· at dusk</em>' : ''}` : '—'; }
     if (!res.feasible) { const sw = res.profile.sweptAt, leg = r.legs[Math.min(r.legs.length - 1, res.profile.leg[Math.max(0, res.profile.n - 1)])]; note.textContent = `too much current · swept ${fmtMMSS(sw ?? 0)} in${leg?.to?.name ? ` near ${leg.to.name}` : ''}`; }
     else note.textContent = '';
     renderWindows();
@@ -131,7 +132,7 @@ export function createPanel({ b, settings, saveSettings, recomputePhysics }) {
 
   // ---- tools: share + the sheet ----
   const share = $('share');
-  share.onclick = async () => { const url = planUrl(); try { await navigator.clipboard.writeText(url); share.textContent = 'link copied'; } catch { prompt('copy this link', url); } setTimeout(() => { share.textContent = 'copy link'; }, 1500); };
+  share.onclick = async () => { const url = planUrl(draw?.custom); try { await navigator.clipboard.writeText(url); share.textContent = 'link copied'; } catch { prompt('copy this link', url); } setTimeout(() => { share.textContent = 'copy link'; }, 1500); };
   const sheet = $('sheet');
   const openSheet = () => { sheet.hidden = false; renderSheet(); }, closeSheet = () => { sheet.hidden = true; };
   $('settings-btn').onclick = openSheet; $('about').onclick = e => { e.preventDefault(); openSheet(); }; $('sheet-close').onclick = closeSheet;
@@ -160,16 +161,17 @@ export function createPanel({ b, settings, saveSettings, recomputePhysics }) {
     favs.innerHTML = '';
     for (const [i, f] of loadFavs().entries()) {
       const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'fav';
-      btn.innerHTML = `<span>${f.name}</span><span class="x" title="forget">×</span><span class="d">${f.t ? fmtWhen(f.t) : 'now'} · ${fmtPaceOnly(f.pace)} ${paceUnit()}</span>`;
+      btn.innerHTML = `<span>${f.custom ? '✎ ' : ''}${f.name}</span><span class="x" title="forget">×</span><span class="d">${f.t ? fmtWhen(f.t) : 'now'} · ${fmtPaceOnly(f.pace)} ${paceUnit()}</span>`;
       btn.onclick = async e => {
         if (e.target.classList.contains('x')) { const l = loadFavs(); l.splice(i, 1); saveFavs(l); renderFavs(); return; }
         if (f.world !== state.world) await b.switchWorld(f.world);
-        set({ routeId: f.route, selectedTime: f.t, paceMps: f.pace });
+        if (f.custom && draw) draw.load(f.custom);
+        set({ routeId: f.custom ? 'custom' : f.route, selectedTime: f.t, paceMps: f.pace });
       };
       favs.appendChild(btn);
     }
   }
-  $('fav-save').onclick = () => { const r = current(); if (!r) return; const l = loadFavs(); l.unshift({ name: `${r.name} · ${state.selectedTime ? fmtWhen(state.selectedTime) : 'now'}`, world: state.world, route: r.id, t: state.selectedTime, pace: state.paceMps }); saveFavs(l.slice(0, 20)); renderFavs(); };
+  $('fav-save').onclick = () => { const r = current(); if (!r) return; const l = loadFavs(); l.unshift({ name: `${r.name} · ${state.selectedTime ? fmtWhen(state.selectedTime) : 'now'}`, world: state.world, route: r.id, t: state.selectedTime, pace: state.paceMps, custom: r.custom ? draw?.custom : null }); saveFavs(l.slice(0, 20)); renderFavs(); };
   renderFavs();
 
   // ---- wiring ----

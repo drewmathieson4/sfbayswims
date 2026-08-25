@@ -20,8 +20,9 @@ export function createProbe({ b }) {
     tag.style.left = `${px}px`; tag.style.top = `${py}px`; tag.classList.add('on');
   }
   const hide = () => { tag.classList.remove('on'); };
-  map.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' && !pinned) show(e.clientX, e.clientY); });
+  const drawing = () => document.documentElement.classList.contains('drawing');
+  map.addEventListener('pointermove', e => { if (drawing()) return hide(); if (e.pointerType === 'mouse' && !pinned) show(e.clientX, e.clientY); });
   map.addEventListener('pointerleave', () => { if (!pinned) hide(); });
-  map.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') { pinned = !pinned || true; show(e.clientX, e.clientY); setTimeout(() => { pinned = false; hide(); }, 4000); } });
+  map.addEventListener('pointerdown', e => { if (drawing()) return; if (e.pointerType !== 'mouse') { pinned = !pinned || true; show(e.clientX, e.clientY); setTimeout(() => { pinned = false; hide(); }, 4000); } });
   return { show, hide };
 }

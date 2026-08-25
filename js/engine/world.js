@@ -63,7 +63,7 @@ export function buildWorld(data, env, refs) {
     const t0 = performance.now(), proj = createProjection(CONFIG.origin);
     if (world.geometry.type === 'mask' && world.field.type === 'cove') throw new Error(`world ${data.id}: the cove field needs zone geometry`);
     const geom = world.geometry.type === 'zones' ? buildGeometry(data.shoreline, data.zones, CONFIG, proj) : buildMaskGeometry(data.mask, data.maskMeta, proj);
-    const { routes } = buildRoutes(data.routes, data.landmarks, geom, { proj, followOffsetM: CONFIG.route.followOffsetM, keepRightM: CONFIG.route.keepRightM, turnRadiusM: CONFIG.route.turnRadiusM });
+    const { routes, landmarks } = buildRoutes(data.routes, data.landmarks, geom, { proj, followOffsetM: CONFIG.route.followOffsetM, keepRightM: CONFIG.route.keepRightM, turnRadiusM: CONFIG.route.turnRadiusM });
     if (state.debug) checkLand(routes, geom);
     let extent = CONFIG.view.extent;
     if (!extent) {                                       // fit: the core box ∪ the routes, padded
@@ -85,7 +85,7 @@ export function buildWorld(data, env, refs) {
       const currentsRef = () => { const live = refs.liveCurrentsRef(); if (live && bundle) return { covers: t => live.covers(t) || bundle.covers(t), at: t => live.covers(t) ? live.at(t) : bundle.at(t) }; return live || bundle; };
       field = createField({ geometry: geom, tideRef: refs.tideRef, currentsRef, config: CONFIG });
     }
-    b = { proj, geom, routes, extent, field, stations };
+    b = { proj, geom, routes, landmarks, landmarksJson: data.landmarks, extent, field, stations };
     built.set(data.id, b);
     console.log(`world ${data.id}: grid ${geom.grid.nx}×${geom.grid.ny} @ ${geom.grid.cell.toFixed(1)} m, ${routes.length} routes, ${stations ? stations.length + ' stations' : 'cove field'}, ${Math.round(performance.now() - t0)} ms`);
   }
@@ -95,13 +95,18 @@ export function buildWorld(data, env, refs) {
 }
 
 /** Route authoring aid (?debug=1): warn when a leg crosses land — beach ends excused, nicks under 30 m ignored. */
-function checkLand(routes, geom) {
-  for (const r of routes) for (const leg of r.legs) {
+/** Does any leg of the route run over land (three consecutive 10-m samples off the water)? Returns the first such leg or null. */
+export function routeCrossesLand(r, geom) {
+  for (const leg of r.legs) {
     const n = Math.max(1, Math.ceil(leg.meters / 10)), skip = Math.min(4, Math.floor(n / 3)); let run = 0;
     for (let s = skip; s <= n - skip; s++) {
       const x = leg.from.x + (leg.to.x - leg.from.x) * s / n, y = leg.from.y + (leg.to.y - leg.from.y) * s / n;
       if (isWater(geom, x, y)) { run = 0; continue; }
-      if (++run >= 3) { console.warn(`route ${r.id}: leg ${leg.from.id || '·'}→${leg.to.id || '·'} crosses land near x=${Math.round(x)} y=${Math.round(y)} m`); break; }
+      if (++run >= 3) return { leg, x, y };
     }
   }
+  return null;
+}
+function checkLand(routes, geom) {
+  for (const r of routes) { const c = routeCrossesLand(r, geom); if (c) console.warn(`route ${r.id}: leg ${c.leg.from.id || '·'}→${c.leg.to.id || '·'} crosses land near x=${Math.round(c.x)} y=${Math.round(c.y)} m`); }
 }

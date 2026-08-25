@@ -51,12 +51,24 @@ export function createLegs({ b, settings }) {
     });
     drawRoute(r, res);
   }
-  /** The route on the map coloured by ground speed relative to the still-water pace: 0.5× red → 1× grey-white → 1.5× green. */
+  /**
+   * The route on the map: the whole path always (a thin base line — this is for planning, not just now), coloured by
+   * ground speed relative to the still-water pace (0.5× red → 1× grey-white → 1.5× green) as far as the swim gets, and
+   * red dashed from the point the current can't be held.
+   */
   function drawRoute(r, res) {
     const layer = live.world?.layers?.route; if (!layer) return;
     if (groupLayer !== layer) { group = el('g', { id: 'speed' }, layer); groupLayer = layer; }
     group.innerHTML = '';
-    if (!r || !res || !settings.colour) return;
+    if (!r) return;
+    const path = pts => pts.map((q, i) => `${i ? 'L' : 'M'}${q.x.toFixed(1)} ${(-q.y).toFixed(1)}`).join('');
+    el('path', { class: 'base', d: path(r.points) }, group);
+    if (res && res.profile.sweptAt != null) {                                  // the rest of the swim, beyond the swept point
+      const p = res.profile; let k = 0; while (k < p.n && p.t[k] < p.sweptAt) k++; k = Math.max(0, k - 1);
+      let bi = 0, bd = Infinity; r.points.forEach((q, i) => { const d = Math.hypot(q.x - p.x[k], q.y - p.y[k]); if (d < bd) { bd = d; bi = i; } });
+      el('path', { class: 'swept', d: path(r.points.slice(bi)) }, group);
+    }
+    if (!res || !settings.colour) return;
     const p = res.profile, vs = state.paceMps, end = p.sweptAt != null ? p.sweptAt : Infinity;
     for (let i = 0; i + 1 < p.n; i += 2) {
       if (p.t[i] > end) break;

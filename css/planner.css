@@ -8,7 +8,8 @@ button, input, select { font: inherit; color: inherit; }
 button { background: none; border: 1px solid var(--line); border-radius: 6px; padding: 0.35em 0.7em; cursor: pointer; color: var(--ink2); }
 button:hover { border-color: rgba(255, 255, 255, 0.4); color: var(--ink); }
 button.on { background: rgba(255, 255, 255, 0.14); color: var(--ink); border-color: rgba(255, 255, 255, 0.4); }
-input { background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line); border-radius: 6px; padding: 0.35em 0.5em; color: var(--ink); }
+input, select { background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line); border-radius: 6px; padding: 0.35em 0.5em; color: var(--ink); }
+select option { background: #111; color: var(--ink); }
 input[type=range] { padding: 0; accent-color: #fff; }
 input[type=number] { width: 4.5em; }
 a { color: var(--ink2); }
@@ -78,9 +79,22 @@ details .row.filters { gap: 1em; font-size: 0.9em; } .filters label { display: f
 .list button.bs em { color: #ffd27a; font-style: normal; }
 .list button.bs.best .s { color: var(--ink); font-weight: 600; }
 .list button.fav .x { color: var(--mute); }
+#svg #speed .base { fill: none; stroke: rgba(255, 255, 255, 0.45); stroke-width: 1.5px; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+#svg #speed .swept { fill: none; stroke: rgba(255, 90, 60, 0.9); stroke-width: 2px; stroke-dasharray: 6 5; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
 #svg #speed line { stroke-width: 3px; vector-effect: non-scaling-stroke; opacity: 0.85; stroke-linecap: round; }
 #svg #speed.dim line { opacity: 0.25; } #svg #speed line.hi { opacity: 1; stroke-width: 6px; }
 #tl .height { fill: none; stroke: rgba(255, 255, 255, 0.55); stroke-width: 1; stroke-dasharray: 3 3; }
+
+/* draw a swim */
+.draw-tools { margin-top: 0.6em; }
+#draw-bar { margin-top: 0.6em; padding: 0.6em; border: 1px dashed var(--line); border-radius: 8px; }
+#draw-bar .warn { color: #ffb4a2; font-size: 0.9em; }
+#draw-name { flex: 1; min-width: 8em; }
+html.drawing #map { cursor: crosshair; }
+html.drawing #probe { display: none; }
+#svg #draw circle { fill: #fff; stroke: #000; stroke-width: 1.5px; cursor: grab; vector-effect: non-scaling-stroke; }
+#svg #draw circle:active { cursor: grabbing; }
+html.drawing #svg { touch-action: none; }
 
 /* the timeline strip */
 #timeline { position: absolute; z-index: 7; left: 0; right: 0; bottom: 0; height: var(--tl-h); background: rgba(8, 8, 8, 0.96); border-top: 1px solid var(--line); touch-action: none; cursor: ew-resize; }

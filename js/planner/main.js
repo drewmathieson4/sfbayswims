@@ -13,7 +13,8 @@ import { createProbe } from './probe.js';
 import { createLegs } from './legs.js';
 import { createStarts } from './starts.js';
 import { bindKeys } from './keys.js';
-import { readPlan } from './share.js';
+import { readPlan, customFromParams } from './share.js';
+import { createDraw } from './draw.js';
 
 const params = new URLSearchParams(location.search);
 const DEFAULTS = { units: { dist: 'yd', temp: 'F' }, streaks: true, swimmer: true, arrows: false, colour: true, tideLine: true, swim: { burst: true, reserveS: 60, floorMps: 0.25 } };
@@ -43,7 +44,8 @@ const b = await boot({
   },
 });
 hud = createHud({ live: b.live, refs: b.services.refs });
-const panel = createPanel({ b, settings, saveSettings, recomputePhysics: () => bumpData({}) });
+const draw = createDraw({ b });
+const panel = createPanel({ b, settings, saveSettings, recomputePhysics: () => bumpData({}), draw });
 const timeline = createTimeline({ b, settings });
 createProbe({ b });
 const legs = createLegs({ b, settings });
@@ -60,5 +62,6 @@ b.services.onTick((dt, force) => {                                            //
   if (state.swimming) timeline.render();
 });
 await b.activateFirst();
+const shared = customFromParams(params); if (shared) draw.load(shared);
 hud.setSpot(b.live.world?.world.title || 'Aquatic Park');
-window.APP.planner = { settings, panel, timeline, legs };
+window.APP.planner = { settings, panel, timeline, legs, draw };

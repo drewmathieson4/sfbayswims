@@ -78,5 +78,6 @@ export const CONFIG = {
   show: { swimmer: true, streaks: true, ui: true },     // keys a / s / u; ?swimmer=0 ?streaks=0 ?ui=0; ?static=1 = still photo
   hud: { scrubbedWater: 'label', scrubbedWind: 'hide' },   // live-only readings while time-travelling: 'label' (adds "now") | 'hide'
 
+  draw: { snapM: 30 },                                 // the planner's draw mode: a tap this close to a landmark snaps to it
   debugCurrentKn: 0,                                    // ?kn=2.5 forces a uniform current (+ flood, − ebb) for testing
 };

@@ -39,11 +39,15 @@ Opening (cove) or the Alcatraz station (Bay) with `≈` when a station runs on i
 tide with the next high or low. A **daylight** row shows sunrise–sunset and flags a swim that starts before dawn or
 finishes after dusk. **Legs** (key `l`) breaks the swim down waypoint to waypoint — distance, time, pace, the current
 along (+ helps) and across — and the route on the map is coloured by ground speed (red where the swimmer crawls, green
-where the current helps; hover a row to highlight its leg). **Best starts** searches, on request, this swim or every
+where the current helps; hover a row to highlight its leg). The whole route always draws — this is for planning — with
+the part the current won't let the swimmer hold shown red and dashed. **Best starts** searches, on request, this swim or every
 swim over the next *n* tide cycles, or a chosen date: the best start in each tide cycle (a start within half an hour
 of it is nearly as good), in time order with the finish time, the slack relation and a daylight flag, the fastest in
-bold; filters for daylight, maximum duration and weekends; click one to plan it.
-**Saved plans** keep favourites in the browser. The **timeline** shows the reference current for 48 hours (flood above
+bold; filters for daylight (the whole swim between sunrise and sunset), maximum duration and weekends; click one to plan it.
+**Draw a swim** (or *edit this swim* to start from an existing one): tap the water to add waypoints — a tap near a
+landmark snaps to it — drag a marker to move one, choose one way / out and back / loop, name it; the swim is analysed as
+you draw (time, finish, legs, best starts) and warns if a leg crosses land. It travels in the share link and in **Saved
+plans**, which keep favourites in the browser. The **timeline** shows the reference current for 48 hours (flood above
 the axis, ebb below), the tide height (dashed), slack times, night, the swim as a bar (red where swept) and *now*. Hover (or tap on a phone) anywhere on the
 water for the current at that point and moment. *copy link* puts the whole plan in the URL; *settings · about* has
 units, the map layers, the keys, the data sources and what the numbers do and don't mean.
@@ -51,7 +55,7 @@ units, the map layers, the keys, the data sources and what the numbers do and do
 **Keys:** `← →` start ±5 min (hold to accelerate; `⇧` for ±1 h) · `↑ ↓` swim · `r` the other way · `n` now · `space`
 preview / pause · `s` streaks · `c` current arrows · `l` legs · `- +` pace ±1 s · `v` next spot · `?` the settings sheet.
 
-**URL flags:** `?world=bay` · `?route=b2b_west` (a twin's id, e.g. `alcatraz~`, carries the direction) ·
+**URL flags:** `?world=bay` · `?route=b2b_west` (a twin's id, e.g. `alcatraz~`, carries the direction) · `?wp=lat,lon;lat,lon…&mode=oneway|outback|loop&name=…` (a drawn swim) ·
 `?t=2026-09-01T14:00-07:00` · `?pace=0.87` (m/s) or `?pace=1:45` (per 100 m) · `?units=m&temp=C` · `?offline=1`
 (bundles only) · `?debug=1` · `?frames=90&seed=1` (test hook: render 90 frames and freeze).
 

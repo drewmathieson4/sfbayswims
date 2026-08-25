@@ -31,7 +31,14 @@
   <div class="handle" id="handle"><span id="peek">…</span><button id="collapse" type="button" title="collapse">—</button></div>
   <div class="body">
     <section><h2>Spot</h2><div class="seg" id="spots"></div></section>
-    <section><h2>Swim</h2><div class="list" id="swims"></div><div class="seg dir" id="dir"></div></section>
+    <section><h2>Swim</h2><div class="list" id="swims"></div><div class="seg dir" id="dir"></div>
+      <div class="seg draw-tools"><button type="button" id="draw-start">draw a swim</button><button type="button" id="draw-seed">edit this swim</button></div>
+      <div id="draw-bar" hidden>
+        <div class="row"><input id="draw-name" placeholder="name it"><select id="draw-mode"><option value="oneway">one way</option><option value="outback">out and back</option><option value="loop">loop</option></select></div>
+        <div class="row"><span class="unit" id="draw-count">tap the water to add points</span><span class="warn" id="draw-warn"></span></div>
+        <div class="seg"><button type="button" id="draw-undo">undo</button><button type="button" id="draw-clear">clear</button><button type="button" id="draw-done">done</button><button type="button" id="draw-cancel">cancel</button></div>
+      </div>
+    </section>
     <section><h2>Start</h2>
       <div class="row"><input type="datetime-local" id="start"><button type="button" id="now">now</button></div>
       <div class="seg steps"><button type="button" data-min="-60">−1 h</button><button type="button" data-min="-5">−5</button><button type="button" data-min="5">+5</button><button type="button" data-min="60">+1 h</button></div>
@@ -95,6 +102,7 @@
       <span>v</span><span>next spot</span>
       <span>?</span><span>this sheet</span>
       <span>l</span><span>the legs table</span>
+      <span>tap · drag</span><span>while drawing: add a point · move a marker</span>
     </div>
     <h3>About the numbers</h3>
     <p>Swim times are <strong>predictions, not measurements</strong>. The swimmer holds each leg's line at your pace against
