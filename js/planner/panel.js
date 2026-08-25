@@ -105,8 +105,9 @@ export function createPanel({ b, settings, saveSettings, recomputePhysics, draw 
     const s = strongest(r, { ...res, at });
     rMax.textContent = s ? `${s.kn.toFixed(1)} kn${s.where ? ` · ${s.where}` : ''}` : '—';
     { const s = sunTimes(at, CONFIG.origin.lat, CONFIG.origin.lon), fin = at + res.totalSeconds * 1000;   // daylight: the swim against civil twilight
-      const dark = s.dawn != null && (at < s.dawn || (res.feasible && fin > s.dusk));
-      rSun.innerHTML = s.sunrise ? `${fmtTime(s.sunrise)} – ${fmtTime(s.sunset)}${dark ? ' <em class="warn">· in the dark</em>' : ''}` : '—'; }
+      const end = res.feasible ? fin : at + (res.profile.sweptAt ?? 0) * 1000;
+      const dark = s.dawn != null && (at < s.dawn || end > s.dusk), dim = !dark && s.sunrise != null && (at < s.sunrise || end > s.sunset);
+      rSun.innerHTML = s.sunrise ? `${fmtTime(s.sunrise)} – ${fmtTime(s.sunset)}${dark ? ' <em class="warn">· in the dark</em>' : dim ? ' <em class="warn">· at dusk</em>' : ''}` : '—'; }
     if (!res.feasible) { const sw = res.profile.sweptAt, leg = r.legs[Math.min(r.legs.length - 1, res.profile.leg[Math.max(0, res.profile.n - 1)])]; note.textContent = `too much current · swept ${fmtMMSS(sw ?? 0)} in${leg?.to?.name ? ` near ${leg.to.name}` : ''}`; }
     else note.textContent = '';
     renderWindows();
