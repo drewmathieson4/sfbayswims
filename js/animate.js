@@ -1,6 +1,7 @@
 // The swimmer: the icon (a tapered glyph with stroking arms, or a dot), the swum path (comet tail or ink line),
 // breadcrumbs every crumbEveryS of swim time, and the swept-away fade. Plays back a profile from js/swim.js.
 import { CONFIG } from './config.js';
+import { state } from './state.js';
 import { el } from './map.js';
 import { positionAt } from './swim.js';
 
@@ -14,26 +15,30 @@ export function createSwimmer({ routeLayer, swimmerLayer, config = CONFIG }) {
   const R = () => config.route.dotR, S = () => config.swimmer.size;
 
   // ---- icon ----
+  const mode = () => state.icon || config.swimmer.icon;   // 'glyph' | 'beacon' (key i overrides the config)
   function buildIcon() {
-    const key = config.swimmer.icon + JSON.stringify(config.swimmer.glyph) + R();
+    const key = mode() + JSON.stringify(config.swimmer.glyph) + R();
     if (key === iconKey) return;
     iconKey = key; icon.innerHTML = ''; parts = {};
     const r = R();
-    if (config.swimmer.icon === 'glyph') {                // top-down swimmer drawn pointing north; rotated to the heading
+    if (mode() === 'glyph') {                             // top-down swimmer drawn pointing north; rotated to the heading
       const G = config.swimmer.glyph;
       parts.armL = el('path', { class: 'arm' }, icon); parts.armR = el('path', { class: 'arm' }, icon);
       const sw = r * G.shoulder, hw = r * G.hip, L = r * G.length, top = -r * G.shoulderY;
       parts.body = el('path', { class: 'body', d: `M0 ${top}C${sw} ${top} ${sw} ${top + L * 0.35} ${hw} ${top + L * 0.75}C${hw * 0.8} ${top + L} ${-hw * 0.8} ${top + L} ${-hw} ${top + L * 0.75}C${-sw} ${top + L * 0.35} ${-sw} ${top} 0 ${top}Z` }, icon);
       parts.head = el('circle', { class: 'head', cx: 0, cy: -r * G.headY, r: r * G.head }, icon);
       icon.style.setProperty('--arm-w', G.armW + 'px');
-    } else parts.dot = el('circle', { class: 'dot', cx: 0, cy: 0, r }, icon);
+    } else {                                              // beacon: a white dot with a pulsing ring (CSS animates the ring)
+      el('circle', { class: 'beacon', cx: 0, cy: 0, r: r * 0.9 }, icon);
+      parts.dot = el('circle', { class: 'dot', cx: 0, cy: 0, r: r * 0.55 }, icon);
+    }
   }
   function updateIcon(p, dt) {
-    const r = R(), mode = config.swimmer.icon, A = config.anim;
+    const r = R(), A = config.anim, glyph = mode() === 'glyph';
     const jitter = panic ? panic * (A.panicJitterDeg || 0) * Math.sin(armPhase * 1.7) : 0;   // a desperate wobble when fighting
-    const rot = mode === 'glyph' ? p.hdg + jitter : 0, scale = S() * (mode === 'glyph' ? 1 : 0.7);
-    icon.setAttribute('transform', `translate(${p.x.toFixed(2)} ${(-p.y).toFixed(2)}) rotate(${rot.toFixed(1)}) scale(${scale})`);
-    if (mode !== 'glyph') return;
+    const rot = glyph ? p.hdg + jitter : 0;
+    icon.setAttribute('transform', `translate(${p.x.toFixed(2)} ${(-p.y).toFixed(2)}) rotate(${rot.toFixed(1)}) scale(${S()})`);
+    if (!glyph) return;
     const G = config.swimmer.glyph;
     armPhase += dt * 2 * Math.PI * config.swimmer.strokeHz * (1 + panic * ((A.panicStrokeX || 1) - 1));   // faster stroke under effort
     const sy = -r * G.shoulderY + r * 0.1, sx = r * G.shoulder * 0.9, reach = r * config.swimmer.armReach * (1 + panic * ((A.panicReachX || 1) - 1)), ax = r * G.armX;
@@ -74,8 +79,10 @@ export function createSwimmer({ routeLayer, swimmerLayer, config = CONFIG }) {
 
   function setRoute(prof) { profile = prof.profile; tau = Math.min(tau, profile.totalSeconds); crumbsG.innerHTML = ''; crumbCount = 0; buildIcon(); place(0); }
   const inSweep = () => profile.sweptAt != null && tau > profile.sweptAt;
+  let speedMps = 0;                                      // ground speed at the swimmer's position (the rail's "speed")
   function place(dt) {
     const p = positionAt(profile, tau);
+    speedMps = inSweep() ? 0 : p.g;
     panic += (p.effort - panic) * Math.min(1, dt * 3);
     let fade = 1;
     if (inSweep()) {                                    // full opacity while fighting, then fade out
@@ -88,9 +95,9 @@ export function createSwimmer({ routeLayer, swimmerLayer, config = CONFIG }) {
   function step(dt) {
     if (!profile) return;
     if (hold > 0) { hold -= dt; if (hold <= 0) { tau = 0; crumbsG.innerHTML = ''; crumbCount = 0; } }
-    else { tau += dt * config.anim.speedup * (inSweep() ? (config.anim.sweptTempo || 1) : 1); if (tau >= profile.totalSeconds) { tau = profile.totalSeconds; hold = config.anim.pauseS; } }
+    else { tau += dt * config.anim.speedup * (state.tempo || 1) * (inSweep() ? (config.anim.sweptTempo || 1) : 1); if (tau >= profile.totalSeconds) { tau = profile.totalSeconds; hold = config.anim.pauseS; } }
     place(dt);
   }
-  return { setRoute, step, reset: () => { tau = 0; hold = 0; crumbsG.innerHTML = ''; crumbCount = 0; }, get tau() { return tau; },
+  return { setRoute, step, rebuild: () => { if (profile) { buildIcon(); place(0); } }, reset: () => { tau = 0; hold = 0; crumbsG.innerHTML = ''; crumbCount = 0; }, get tau() { return tau; }, get speedMps() { return speedMps; },
            get elapsed() { return profile?.sweptAt != null ? Math.min(tau, profile.sweptAt) : tau; }, get pos() { return positionAt(profile, tau); } };
 }

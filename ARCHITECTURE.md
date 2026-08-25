@@ -117,7 +117,7 @@ the device), the localStorage cache, the bundle loader and the climatology looku
 
 **`js/ui.js`** — the HUD (clock/"current", water, current with its `≈` and `· alcatraz`, wind) and the rail
 (name, distance in yards or miles, total, elapsed, "too much current", best/next); `applyShow` for the switches;
-`bindControls` (keys, tap/swipe, the accelerating time-travel hold); `kioskMode` (idle cursor, drift back to
+`bindControls` (keys — arrows with the accelerating hold, routes, `i` icon, `[` `]` tempo, `-` `+` pace — tap/swipe); `kioskMode` (idle cursor, drift back to
 current, wake lock, the nightly reload).
 
 **`js/ambient.js`** — kiosk only: polls `/ambient.json` (the Pi's light sensor) and eases a black overlay and a

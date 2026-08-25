@@ -24,7 +24,9 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font); font-
 
 /* swimmer: the swum path, the icon, its stroking arms, the comet tail and the breadcrumbs */
 #svg .route-done { fill: none; stroke: var(--ink); stroke-width: var(--route-done-w); stroke-linecap: round; stroke-linejoin: round; }
-#svg .icon .dot { fill: var(--ink); stroke: var(--bg); stroke-width: 1px; }
+#svg .icon .dot { fill: #fff; stroke: rgba(0, 0, 0, 0.5); stroke-width: 1px; }
+#svg .icon .beacon { fill: none; stroke: #fff; stroke-width: 1.5px; transform-box: fill-box; transform-origin: center; animation: beacon 2.4s ease-out infinite; }
+@keyframes beacon { from { transform: scale(0.6); opacity: 0.9; } to { transform: scale(3.2); opacity: 0; } }
 #svg .icon .body, #svg .icon .head { fill: var(--ink); stroke: var(--bg); stroke-width: 0.6px; }
 #svg .icon .arm { fill: none; stroke: var(--ink); stroke-width: var(--arm-w, 1px); stroke-linecap: round; }
 #svg .tail path { fill: none; stroke: var(--ink); stroke-linecap: round; stroke-linejoin: round; }

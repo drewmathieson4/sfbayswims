@@ -76,7 +76,8 @@ function activate(data) {
   const routeId = world.routes.some(r => r.id === wantedRoute) ? wantedRoute : world.routes.some(r => r.id === remembered) ? remembered : world.routes[0].id;
   services.mount(world);
   set({ world: world.id, routeId });
-  document.getElementById('world-name').textContent = world.world.subtitle || '';
+  const title = world.world.title || 'Aquatic Park';
+  document.getElementById('title').textContent = title; document.title = title;   // the HUD title names the view
   if (state.kiosk) { try { localStorage.setItem('ap.world', world.id); } catch {} }
   Object.assign(window.APP, { geom: world.geom, routes: world.routes, layers: world.layers, photo: world.photo, app: services });
 }

@@ -10,14 +10,14 @@ export const fmtMMSS = s => {
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
   return h ? `${h}:${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')}` : `${m}:${String(ss).padStart(2, '0')}`;
 };
-const M2YD = 1.09361, M2MI = 1 / 1609.344;
+const M2YD = 1.09361, M2MI = 1 / 1609.344, YD100 = 91.44;
 export const fmtDist = m => m * M2YD >= 3000 ? `${(m * M2MI).toFixed(1)} mi` : `${Math.round(m * M2YD).toLocaleString('en-US')} yd`;
 const compass = d => ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(((d % 360) + 360) % 360 / 45) % 8];
 const fmtWhen = t => `${fmtDate(t).replace(/,.*$/, '')} ${fmtTime(t)}`;
 
 export function createHud({ live }) {
   const clock = $('clock'), water = $('water'), current = $('current'), wind = $('wind');
-  const rName = $('route-name'), rTotal = $('route-total'), rDist = $('route-dist'), elapsed = $('elapsed'), note = $('route-note'), best = $('route-best'), next = $('route-next');
+  const rName = $('route-name'), rTotal = $('route-total'), rDist = $('route-dist'), elapsed = $('elapsed'), elapsedK = $('elapsed-k'), speed = $('speed'), note = $('route-note'), best = $('route-best'), next = $('route-next');
   const scrubbed = () => state.selectedTime != null;
   const renderClock = () => { clock.textContent = scrubbed() ? `${fmtDate(effectiveTime())} · ${fmtTime(effectiveTime())}` : 'current'; };
   function renderWater() {
@@ -55,7 +55,10 @@ export function createHud({ live }) {
   on('routeId', renderRoute); on('physics', renderRoute); on('paceMps', renderRoute); on('windows', renderWindows);
   on('world', () => { renderRoute(); renderCurrent(); });
   renderClock(); renderWater(); renderWind(); renderCurrent(); renderRoute();
-  return { setElapsed: s => { elapsed.textContent = fmtMMSS(s); } };
+  return {
+    setElapsed: (s, tempo) => { elapsed.textContent = fmtMMSS(s); elapsedK.textContent = tempo && Math.abs(tempo - CONFIG.anim.speedup) > 1e-9 ? `elapsed · ${+tempo.toFixed(1)}×` : 'elapsed'; },
+    setSpeed: mps => { speed.textContent = mps > 0.01 ? `${fmtMMSS(Math.round(YD100 / mps))} /100 yd` : '—'; },   // whole seconds only
+  };
 }
 
 /** The a / s / u switches and ?static: state.show → html classes. */
@@ -108,8 +111,10 @@ export function bindControls({ live, mapEl, onSwitchWorld }) {
       case 'p': case 'P': { const on_ = !(state.show.swimmer || state.show.ui); set({ show: { ...state.show, swimmer: on_, ui: on_ } }); applyShow(); break; }   // photo mode
       case 'v': case 'V': if (!e.repeat) onSwitchWorld(); break;
       case 'd': case 'D': set({ debug: !state.debug }); document.documentElement.classList.toggle('debug', state.debug); break;
-      case '-': case '_': set({ paceMps: 100 / (Math.round(100 / state.paceMps) + 5) }); break;
-      case '=': case '+': set({ paceMps: 100 / Math.max(40, Math.round(100 / state.paceMps) - 5) }); break;
+      case '-': case '_': set({ paceMps: YD100 / Math.min(300, Math.round(YD100 / state.paceMps) + 1) }); break;   // pace: ±1 s per 100 yd
+      case '=': case '+': set({ paceMps: YD100 / Math.max(40, Math.round(YD100 / state.paceMps) - 1) }); break;
+      case 'i': case 'I': set({ icon: (state.icon || CONFIG.swimmer.icon) === 'glyph' ? 'beacon' : 'glyph' }); break;   // swimmer glyph ↔ beacon
+      case '[': case ']': { let t = state.tempo * (e.key === ']' ? 1.5 : 1 / 1.5); if (Math.abs(t - 1) < 0.02) t = 1; set({ tempo: Math.min(64, Math.max(0.1, t)) }); break; }   // animation faster / slower
       default: return;
     }
   });
