@@ -15,8 +15,8 @@ the current it says so, names the next and best start in the coming 48 h, and th
 This is two products on one engine — the **Planner** (this page) and the wall-hung **Frame**
 (`frame/` — the view's swims play in turn, 20 seconds each from now, with the water following the swimmer; one
 button: click swimmer, double-click overlay, triple-click streaks, hold to switch view) — see [SPEC.md](SPEC.md)
-and [README-frame.md](README-frame.md). What the apps depend on, how each source can fail and the one yearly chore
-(next year's bundles) are in [DATA.md](DATA.md).
+and [README-frame.md](README-frame.md). What the apps depend on, how each source can fail and the yearly bundles
+(refreshed by a quarterly GitHub Action) are in [DATA.md](DATA.md).
 
 Made as a wedding gift for Jean Marc. `ARCHITECTURE.md` walks through every file.
 

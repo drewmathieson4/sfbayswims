@@ -28,7 +28,8 @@ export async function loadWorld(id, year = new Date().getFullYear()) {
   const opt = url => fetch(url, { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null);   // optional files → null
   const jobs = {
     landmarks: loadJSON(dir + world.landmarks), routes: loadJSON(dir + world.routes), photoMeta: opt(pdir + 'photo.json'),
-    currentsThis: opt(dataUrl(world.bundles.currents.replace('{year}', year))), currentsNext: opt(dataUrl(world.bundles.currents.replace('{year}', year + 1))),
+    currentsThis: opt(dataUrl(world.bundles.currents.replace('{year}', year))),
+    currentsNext: new Date().getMonth() >= 10 ? opt(dataUrl(world.bundles.currents.replace('{year}', year + 1))) : Promise.resolve(null),   // next year's from November on (the Bay's is 7 MB)
   };
   if (world.geometry.type === 'zones') { jobs.shoreline = loadJSON(dir + world.geometry.shoreline); jobs.zones = loadJSON(dir + world.geometry.zones); }
   else { jobs.maskMeta = loadJSON(dir + world.geometry.meta); jobs.mask = loadMask(dir + world.geometry.file); }

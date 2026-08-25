@@ -1,0 +1,31 @@
+# Quarterly: keep the bundled tide and current predictions ahead of the calendar (see DATA.md §2). Fetches from NOAA
+# only what is missing or ends within 120 days, commits the bundles, pushes (GitHub Pages redeploys), and fails —
+# loudly, by email — if a bundle still ends within 45 days afterwards.
+name: bundles
+on:
+  schedule:
+    - cron: '0 14 1 1,4,7,10 *'      # 06:00 Pacific on the first of January, April, July, October
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: refresh the bundles that need it
+        run: python3 tools/refresh_bundles.py
+      - name: commit and push what changed
+        run: |
+          git config user.name "bundles bot"; git config user.email "actions@users.noreply.github.com"
+          git add data/*.json data/worlds/*/currents-*.json
+          if git diff --cached --quiet; then echo "no bundle changed"; else
+            git commit -m "bundles: refreshed $(date -u +%Y-%m-%d) (quarterly action)"; git push
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/pages/builds" >/dev/null && echo "Pages build requested"
+          fi
+        env: { GH_TOKEN: '${{ github.token }}' }
+      - name: still healthy?
+        run: python3 tools/check_bundles.py --days 45

@@ -35,7 +35,11 @@ meaning anything. So:
   commit, push. The site picks the new files up (the engine loads this year's and next year's bundles together, so
   there is no restart at New Year). The Pi frame does it by itself — `tools/pi/refresh-bundles.sh` on a December
   cron — and needs only network.
-- ***Later:*** a GitHub Action that runs `check_bundles.py` monthly and opens an issue when a bundle is ending.
+- **Automated:** `.github/workflows/bundles.yml` runs `tools/refresh_bundles.py` on the first of January, April,
+  July and October (and on demand from the Actions tab): it fetches whatever is missing or ends within 120 days —
+  so next year's bundles arrive with the October run — commits them, pushes (Pages redeploys), and the run fails,
+  which emails you, if a bundle still ends within 45 days. Next year's Bay bundle is only downloaded by visitors
+  from November on, so committing it early costs nobody anything.
 
 ## 3. Failure modes, one by one
 
@@ -76,6 +80,7 @@ when `CONFIG.feedback.email` is set.
 ## 6. Checklist
 
 - Monthly: `python3 tools/check_bundles.py` (or watch for the in-app horizon notes).
-- December: regenerate next year's bundles; commit; push. Confirm the Frame's cron did the same (`ls /opt/aquatic-park/data`).
+- October: the action should have committed next year's bundles (`git log -1 -- data`); if it failed, run
+  `python3 tools/refresh_bundles.py` yourself. December: confirm the Frame's cron did the same (`ls /opt/aquatic-park/data`).
 - After a NOAA outage: nothing — the next refresh heals; a stale tag disappears by itself.
 - After a report: the *Errors:* line and the *Plan:* link reproduce most things.
