@@ -103,7 +103,8 @@ if the line can't be held at the normal pace and the sprint reserve allows, spri
 fails the leg is *swept* and the route ends there. `integrateRoute` threads the reserve through the legs and, for a
 swept route, appends `sweepFrom`: a fight (sprinting into the current while the reserve lasts), tiring over
 `sweptFightS`, then carried. The result is a profile (`t, x, y, hdg, effort` arrays) that `positionAt` interpolates.
-`scanWindows` integrates a route every 30 min over 48 h for the next/best feasible start.
+`scanWindows` integrates a route every 30 min over 48 h for the next/best feasible start; `scanStarts` does a batch of
+given starts (the planner's search); `slackNear` finds the nearest slack of the reference current.
 
 ## 3. Rendering, UI, live data
 
@@ -149,6 +150,10 @@ copy link, the settings/about sheet (units, layers, keys, sources, disclaimer). 
 (flood up / ebb down), slack ticks, night from `sun.js`, the swim bar (red from the swept point), now, the playhead;
 drag or tap sets the start. **`probe.js`** — the current under the pointer (hover / tap) at `displayTime()`.
 **`keys.js`** — the keys. **`share.js`** — the plan as a URL (`planUrl`) and units from a link (`readPlan`).
+**`legs.js`** — the legs table (segments between named waypoints from the physics legs; the current along/across sampled
+over each) and the route coloured by ground speed on the map. **`starts.js`** — best starts: `scanStarts` in chunks
+over the next n tide cycles (745 min each, every 15 min) or a date, for this swim or every swim from `routes.json`,
+one per cycle (the fastest within ±half a cycle), filtered (daylight via `sun.js`, duration, weekends), with `slackNear` for the slack relation; memoised.
 
 **`js/engine/format.js`** · **`show.js`** · **`input.js`** · **`sun.js`** — number formatting in the chosen units
 (`setUnits`: yards/miles or metres/km, pace per 100 yd or m, °F/°C); the switches (`state.show` → html classes); when a

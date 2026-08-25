@@ -11,7 +11,8 @@
     "cove_mid",
     "gate",
     "start"
-   ]
+   ],
+   "notes": "escort boat and a pilot — ferry lanes; the classic start is on the last of the flood"
   },
   {
    "id": "escape",
@@ -20,7 +21,8 @@
    "waypoints": [
     "alcatraz",
     "marina_green"
-   ]
+   ],
+   "notes": "escort boat and a pilot — ferry lanes"
   },
   {
    "id": "gate",
@@ -30,7 +32,8 @@
     "lime_point",
     "ggb_south",
     "fort_point"
-   ]
+   ],
+   "notes": "pilot required — the shipping channel; strongest current in the Bay"
   },
   {
    "id": "gate_ap",
@@ -45,7 +48,8 @@
     "cove_mid",
     "gate",
     "start"
-   ]
+   ],
+   "notes": "pilot required — the shipping channel"
   },
   {
    "id": "b2b",
@@ -59,7 +63,8 @@
     "off_pier39",
     "off_pier23",
     "bay_bridge"
-   ]
+   ],
+   "notes": "pilot required — shipping channel and ferry lanes; swum on the flood"
   },
   {
    "id": "b2b_west",
@@ -74,7 +79,8 @@
     "off_marina",
     "ggb_south"
    ],
-   "reverseOf": "b2b"
+   "reverseOf": "b2b",
+   "notes": "pilot required — shipping channel and ferry lanes; swum on the ebb"
   },
   {
    "id": "angel_round",
@@ -98,7 +104,8 @@
     "angel_15",
     "angel_00"
    ],
-   "loop": true
+   "loop": true,
+   "notes": "escort boat — ferry lanes at Tiburon and Ayala Cove"
   },
   {
    "id": "angel_ap",
@@ -112,7 +119,8 @@
     "cove_mid",
     "gate",
     "start"
-   ]
+   ],
+   "notes": "escort boat and a pilot — ferry lanes"
   }
  ]
 }

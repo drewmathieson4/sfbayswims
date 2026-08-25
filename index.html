@@ -46,11 +46,13 @@
     </section>
     <section class="result">
       <div class="route-name" id="route-name">…</div>
+      <div class="notes" id="route-notes"></div>
       <div class="rows">
         <div class="r"><span class="k">distance</span><span class="v" id="route-dist">…</span></div>
         <div class="r"><span class="k">time</span><span class="v" id="route-total">…</span></div>
         <div class="r"><span class="k">finish</span><span class="v" id="route-eta">…</span></div>
         <div class="r"><span class="k">strongest current</span><span class="v" id="route-max">…</span></div>
+        <div class="r"><span class="k">daylight</span><span class="v" id="route-sun">…</span></div>
         <div class="note" id="route-note"></div>
         <div class="r win" id="route-best"></div>
         <div class="r win" id="route-next"></div>
@@ -59,6 +61,15 @@
       </div>
       <div class="row preview"><button type="button" id="start-swim">▶ preview</button><input type="range" id="tempo" min="-2" max="3" step="0.1" value="0" title="preview speed"><span class="unit" id="tempo-v">10×</span></div>
     </section>
+    <section><details><summary>Legs</summary><table id="legs"></table><div class="hint">current: along the leg (+ helps) · across, kn</div></details></section>
+    <section><details id="bs"><summary>Best starts</summary>
+      <div class="row"><select id="bs-scope"><option value="this">this swim</option><option value="all">every swim</option></select><span>next</span><input type="number" id="bs-cycles" min="1" max="8" value="4"><span class="unit">tide cycles</span></div>
+      <div class="row"><span>or on</span><input type="date" id="bs-date"><button type="button" id="bs-clear" title="clear the date">×</button></div>
+      <div class="row filters"><label><input type="checkbox" id="bs-daylight" checked> daylight only</label><label>max <input type="number" id="bs-max" min="0" step="15" placeholder="—"> min</label><label><input type="checkbox" id="bs-weekends"> weekends</label></div>
+      <div class="row"><button type="button" id="bs-find">find best starts</button><progress id="bs-progress" hidden></progress></div>
+      <div class="list" id="bs-results"></div>
+    </details></section>
+    <section><details><summary>Saved plans</summary><div class="list" id="favs"></div><div class="row"><button type="button" id="fav-save">save this plan</button></div></details></section>
     <section class="tools"><button type="button" id="share">copy link</button><button type="button" id="settings-btn">settings · about</button></section>
   </div>
 </aside>
@@ -70,7 +81,7 @@
     <div class="grid">
       <span>distance</span><div class="seg" id="u-dist"><button type="button" data-v="yd">yards</button><button type="button" data-v="m">metres</button></div>
       <span>temperature</span><div class="seg" id="u-temp"><button type="button" data-v="F">°F</button><button type="button" data-v="C">°C</button></div>
-      <span>on the map</span><div class="seg" id="layers"><button type="button" data-k="streaks">streaks</button><button type="button" data-k="swimmer">swimmer</button><button type="button" data-k="arrows">current arrows</button></div>
+      <span>on the map</span><div class="seg" id="layers"><button type="button" data-k="streaks">streaks</button><button type="button" data-k="swimmer">swimmer</button><button type="button" data-k="arrows">current arrows</button><button type="button" data-k="colour">route by speed</button><button type="button" data-k="tideLine">tide height</button></div>
     </div>
     <h3>Keys</h3>
     <div class="keys">
@@ -83,6 +94,7 @@
       <span>− +</span><span>pace ±1 s</span>
       <span>v</span><span>next spot</span>
       <span>?</span><span>this sheet</span>
+      <span>l</span><span>the legs table</span>
     </div>
     <h3>About the numbers</h3>
     <p>Swim times are <strong>predictions, not measurements</strong>. The swimmer holds each leg's line at your pace against

@@ -112,7 +112,7 @@ export function smoothPath(seq, R, { inWater = null } = {}) {
     carry = L - (d - step);
   }
   pts.push({ ...seq[seq.length - 1] });
-  for (const w of seq) {                                    // named waypoints: the nearest sample takes the name
+  for (const w of seq.slice(1, -1)) {                       // named waypoints: the nearest sample takes the name (the ends keep theirs)
     if (!w.id) continue;
     let best = -1, bd = Infinity;
     for (let k = 1; k < pts.length - 1; k++) { const dd = Math.hypot(pts[k].x - w.x, pts[k].y - w.y); if (dd < bd) { bd = dd; best = k; } }
@@ -236,7 +236,7 @@ export function buildRoutes(routesJson, landmarksJson, geom, opts = {}) {
     //    segment bends more than 8° off the chord, and at every named waypoint — the rings are dense (~1 m) and the
     //    integrator steps 10 m anyway
     const { legs, meters } = legsFrom(seq);
-    routes.push({ id: r.id, name: r.name, loop: !!r.loop, oneWay: !!r.oneWay, reverseOf: r.reverseOf || null, points: seq, waypoints: items.filter(x => !x.follow), legs, meters });
+    routes.push({ id: r.id, name: r.name, notes: r.notes || '', loop: !!r.loop, oneWay: !!r.oneWay, reverseOf: r.reverseOf || null, points: seq, waypoints: items.filter(x => !x.follow), legs, meters });
   }
   return { landmarks, routes };
 }

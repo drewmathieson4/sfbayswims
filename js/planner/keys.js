@@ -44,6 +44,7 @@ export function bindKeys({ b, panel }) {
       case '-': case '_': set({ paceMps: per100() / Math.min(300, Math.round(per100() / state.paceMps) + 1) }); break;   // pace: ±1 s per 100
       case '=': case '+': set({ paceMps: per100() / Math.max(40, Math.round(per100() / state.paceMps) - 1) }); break;
       case '?': panel.openSheet(); break;
+      case 'l': case 'L': { const d = document.querySelector('#legs')?.closest('details'); if (d) d.open = !d.open; break; }
       default: return;
     }
   });
