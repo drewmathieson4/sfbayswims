@@ -4,8 +4,8 @@ The app is a static site: `index.html` loads one ES module, `js/main.js`, which 
 (`js/engine/`) and adds this app's UI on top (`js/planner/hud.js`, `js/planner/keys.js`, `js/frame/kiosk.js`). No build
 step, no dependencies. Two products will share the engine — the Planner (this page) and the Frame (`frame/`) — see
 `SPEC.md`. Data lives under `data/`, prepared by the Python scripts under `tools/`. Everything is metres: each world
-has a local origin, positions are metres east/north of it, and the SVG's user units are metres too (so a 60 m
-swimmer glyph in the Bay is literally `dotR: 60`).
+has a local origin, positions are metres east/north of it, and the SVG's user units are metres too (so a 30 m
+swimmer glyph in the Bay is literally `dotR: 30`).
 
 ```
 index.html ─ js/main.js ─┬─ js/engine/boot.js ─┬─ world.js ───┬─ geometry.js / mask.js      grid + zones (cove) | water-mask PNG (bay)

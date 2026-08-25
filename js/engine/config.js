@@ -70,7 +70,7 @@ export const CONFIG = {
   offlineHint: { afterS: 180, text: 'no wi-fi · join "aquatic-park" to set up' },   // kiosk only, after that long without live data
 
   photo: { filter: 'brightness(1) contrast(1.2) saturate(1)' },      // CSS filter on the aerial (--photo-filter)
-  route: { doneWidth: 1, dotR: 3.5, followOffsetM: 15, keepRightM: 4, turnRadiusM: 20 },   // dotR = swimmer unit size in metres (the Bay uses 60); turnRadiusM rounds every corner
+  route: { doneWidth: 1, dotR: 3.5, followOffsetM: 15, keepRightM: 4, turnRadiusM: 20 },   // dotR = swimmer unit size in metres (the Bay uses 30); turnRadiusM smooths the path
   swimmer: { icon: 'glyph', size: 1.5, strokeHz: 0.5, armReach: 0.8, turnEaseS: 0.25,   // icon: glyph | beacon (key i toggles); turnEaseS eases the glyph's rotation
     glyph: { head: 0.34, headY: 1.35, shoulder: 0.42, shoulderY: 0.85, hip: 0.22, length: 2.1, armX: 0.7, armW: 1.0 } },  // in units of route.dotR
   trace: { mode: 'none', tailS: 30, tailSegments: 14, crumbs: true, crumbEveryS: 15 },   // the swum path: none (crumbs only) | comet | ink
