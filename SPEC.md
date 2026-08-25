@@ -109,8 +109,8 @@ Input is dropped during a transition (≈1.5 s). Switches persist in `localStora
   14px rgba(0,0,0,.4)`, inset 3 % (inside the mat's shadow) — a museum label, not a HUD. The offline hint
   (`no wi-fi · join "aquatic-park"…`) stays visible even with the overlay off — it is a service message.
 - **Swimmer:** the tapered ink glyph as today (beacon selectable by preset); no comet tail anywhere (both
-  products) — breadcrumbs are the trace, as *crumbs per swim* (`crumbsPerSwim`: 50 in each view) rather than
-  per second, so every swim reads the same. Swims last one minute (`swimSeconds: 60`); the streaks keep drifting
+  products); in the frame **no breadcrumbs either** (`crumbsPerSwim` 0 — Drew, 2026-08-25): the swimmer alone,
+  the planner keeps its crumbs. Swims last one minute (`swimSeconds: 60`); the streaks keep drifting
   between swims (Drew, 2026-08-25).
 - **Streaks:** today's density; alpha ~0.18; `fps 30` on the Pi.
 - **Transitions:** route change as in the cycle; view change through black (a true photo crossfade needs two

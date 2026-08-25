@@ -13,7 +13,7 @@
  "skipInfeasible": false,
  "streaksFollowSwimmer": true,
  "routes": { "cove": null, "bay": null },
- "crumbsPerSwim": { "cove": 50, "bay": 50 },
+ "crumbsPerSwim": { "cove": 0, "bay": 0 },
  "icon": "glyph",
  "streakAlpha": 0.18,
  "labelScrim": 0.45,
