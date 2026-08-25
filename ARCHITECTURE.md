@@ -4,8 +4,8 @@ The app is a static site: `index.html` loads one ES module, `js/main.js`, which 
 (`js/engine/`) and adds this app's UI on top (`js/planner/hud.js`, `js/planner/keys.js`, `js/frame/kiosk.js`). No build
 step, no dependencies. Two products will share the engine — the Planner (this page) and the Frame (`frame/`) — see
 `SPEC.md`. Data lives under `data/`, prepared by the Python scripts under `tools/`. Everything is metres: each world
-has a local origin, positions are metres east/north of it, and the SVG's user units are metres too (so a 60 m
-swimmer glyph in the Bay is literally `dotR: 60`).
+has a local origin, positions are metres east/north of it, and the SVG's user units are metres too (so a 30 m
+swimmer glyph in the Bay is literally `dotR: 30`).
 
 ```
 index.html ─ js/main.js ─┬─ js/engine/boot.js ─┬─ world.js ───┬─ geometry.js / mask.js      grid + zones (cove) | water-mask PNG (bay)
@@ -79,7 +79,10 @@ direction. `cellIndex` / `isWater` are the grid contract everyone uses.
 points, or **follow steps** that trace an offset curve along a pier (`offsetRing`: per-edge offsets, round joins,
 Chaikin smoothing; `arc`/`fullRing`/`tangentTrim` choose and trim the arc). Loops close, out-and-backs expand and
 are shifted right (`keepRight`) so the lanes don't overlap. The drawn `points` keep every vertex; the physics
-`legs` are a decimated polyline (a vertex every ≥ 8 m or on a turn).
+`legs` are a decimated polyline (a vertex every ≥ 8 m, on an 8° bend, or at a named waypoint). The path is smoothed
+first (`smoothPath`: resampled every `route.turnRadiusM`/5 and averaged over ±`turnRadiusM`/2 along the path — 10 m in
+the cove, 150 m in the Bay — with any point that would land on shore kept in place), and `positionAt` interpolates the
+heading, so the swimmer's position and heading are continuous at any tempo.
 
 **`js/engine/tide.js`** — `TideSeries`: NOAA hi/lo extremes → the rate of rise/fall by cosine interpolation (what the
 cove's fill/drain needs), `covers`, `merge` (bundle + cache + live).
@@ -116,8 +119,8 @@ occluded tab.
 `?mask=1`, a status line — on a canvas created on demand.
 
 **`js/engine/animate.js`** — the swimmer: the tapered glyph (or a dot) rotated to the crab heading, arms stroking at a
-rate that rises with `effort`, the comet tail or ink line, breadcrumbs every `crumbEveryS` (appended, not
-rebuilt), and the swept-away playback: fight at full opacity, then fade, pause; `step()` then reports the lap over and the
+rate that rises with `effort`, breadcrumbs every `crumbEveryS` (appended, not rebuilt) as the trace — `trace.mode` can
+add a comet tail or an ink line, off by default — and the swept-away playback: fight at full opacity, then fade, pause; `step()` then reports the lap over and the
 swimmer waits at the start.
 
 **`js/engine/particles.js`** — the streaks: N particles (sized to the water area in view) stepping with the field,
@@ -142,6 +145,16 @@ icon, `[` `]` tempo, `-` `+` pace, the switches) and the tap/swipe gestures.
 the a/s/u switches (`state.show` → html classes); when a person last touched the app (the kiosk reads it).
 
 **`js/frame/kiosk.js`** — `kioskMode` (idle cursor, drift back to current, wake lock, the nightly reload).
+
+**The Frame** (`frame/index.html`, `css/frame.css`, `js/frame/main.js`) — boots the engine with the presets as a
+CONFIG override and `runtime: { playOptions, windowScan: 'infeasible', followSwimmer }`. **`presets.js`** loads
+`data/frame.json` ← `frame.local.json` ← URL flags and persists the switches; **`cycle.js`** plays the view's swims
+in turn (each re-integrated at the current minute, scaled by `playOptions` to `swimSeconds`; finish → `html.fading`
+(hold + fade in CSS) → the runtime's end pause resets the swimmer unseen → rest → next; quiet hours; a once-a-second
+watchdog); **`button.js`** decodes click / double / triple / hold from the Pico's held `b`, the space bar or the
+pointer; **`overlay.js`** renders the title, the conditions line at `displayTime()` and the caption. `animate.js`
+takes per-swim play options (`realSeconds`, `sweptRealSeconds`, `crumbsPerSwim`) from
+`setRoute(prof, opts)`.
 
 **`js/frame/ambient.js`** — kiosk only: polls `/ambient.json` (the Pi's light sensor) and eases a black overlay and a
 warm tint so the frame dims like a print as the room darkens.

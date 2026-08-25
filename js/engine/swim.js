@@ -104,7 +104,8 @@ export function positionAt(profile, tau) {
   let lo = 0, hi = n - 1;
   while (hi - lo > 1) { const m = (lo + hi) >> 1; if (t[m] <= tau) lo = m; else hi = m; }
   const f = (tau - t[lo]) / (t[hi] - t[lo] || 1), g = (s[hi] - s[lo]) / (t[hi] - t[lo] || 1);   // g: ground speed on this sample, m/s
-  return { x: x[lo] + (x[hi] - x[lo]) * f, y: y[lo] + (y[hi] - y[lo]) * f, legIndex: leg[lo], hdg: hdg[lo], effort: eff[lo], g, i: lo };
+  const dh = ((hdg[hi] - hdg[lo] + 540) % 360) - 180;                                       // heading: shortest-arc interpolation, no snaps
+  return { x: x[lo] + (x[hi] - x[lo]) * f, y: y[lo] + (y[hi] - y[lo]) * f, legIndex: leg[lo], hdg: (hdg[lo] + dh * f + 360) % 360, effort: eff[lo], g, i: lo };
 }
 
 /** The coming hours in stepMin steps: the earliest feasible start and the fastest one. */

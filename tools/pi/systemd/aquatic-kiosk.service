@@ -3,8 +3,8 @@ Description=Aquatic Park kiosk browser
 
 [Service]
 Environment=XDG_RUNTIME_DIR=/run/user/@UID@ WAYLAND_DISPLAY=wayland-0
-ExecStartPre=/bin/sh -c 'for i in $(seq 60); do curl -sf http://127.0.0.1:8000/index.html >/dev/null && exit 0; sleep 1; done; exit 0'
-ExecStart=@CHROMIUM@ --kiosk --app=http://127.0.0.1:8000/index.html?kiosk=1 --noerrdialogs --disable-infobars --disable-session-crashed-bubble --no-first-run --disable-features=Translate,TranslateUI --hide-scrollbars --disable-pinch --password-store=basic --check-for-update-interval=31536000 --autoplay-policy=no-user-gesture-required --user-data-dir=@HOME@/.kiosk --ozone-platform=wayland
+ExecStartPre=/bin/sh -c 'for i in $(seq 60); do curl -sf http://127.0.0.1:8000/frame/index.html >/dev/null && exit 0; sleep 1; done; exit 0'
+ExecStart=@CHROMIUM@ --kiosk --app=http://127.0.0.1:8000/frame/index.html?kiosk=1 --noerrdialogs --disable-infobars --disable-session-crashed-bubble --no-first-run --disable-features=Translate,TranslateUI --hide-scrollbars --disable-pinch --password-store=basic --check-for-update-interval=31536000 --autoplay-policy=no-user-gesture-required --user-data-dir=@HOME@/.kiosk --ozone-platform=wayland
 Restart=always
 RestartSec=3
 

@@ -101,15 +101,17 @@ Input is dropped during a transition (≈1.5 s). Switches persist in `localStora
 
 ## Graphics
 
-- **Overlay — three pieces, nothing else.** Top-left: the view title. Top-right, one line:
-  `58°F · EBB 1.4 KN · WIND W 12 KN` (`≈` kept — honest and tiny). Bottom-left, only while a swim plays, fading
-  with it: `ALCATRAZ · 1:12`. No clock (the frame *is* now), no rail, no elapsed/speed, no legend. No panels:
+- **Overlay — museum labels, nothing else.** Top-left: the view title, the time beneath. Top-right, one line:
+  `58°F · EBB 1.4 KN · WIND W 12 KN` (`≈` kept — honest and tiny) and, beneath it, only while a swim plays, fading
+  with it: `ALCATRAZ · 1:12`. A clock under the title shows the moment the picture shows (the swimmer's during a
+  swim). No rail, no elapsed/speed, no legend. No panels:
   white ink at 85 %, weight 400, ~0.8× today's size, tracking 0.2 em, `text-shadow: 0 1px 2px rgba(0,0,0,.6), 0 0
   14px rgba(0,0,0,.4)`, inset 3 % (inside the mat's shadow) — a museum label, not a HUD. The offline hint
   (`no wi-fi · join "aquatic-park"…`) stays visible even with the overlay off — it is a service message.
-- **Swimmer:** the tapered ink glyph as today (beacon selectable by preset), comet tail `tailS = 0.15 ×
-  totalSeconds` (same visual length at every scaling), breadcrumbs as *crumbs per swim* (`crumbsPerSwim`: cove 0,
-  Bay 12) rather than per second — consistent across route lengths.
+- **Swimmer:** the tapered ink glyph as today (beacon selectable by preset); no comet tail anywhere (both
+  products); in the frame **no breadcrumbs either** (`crumbsPerSwim` 0 — Drew, 2026-08-25): the swimmer alone,
+  the planner keeps its crumbs. Swims last one minute (`swimSeconds: 60`); the streaks keep drifting
+  between swims (Drew, 2026-08-25).
 - **Streaks:** today's density; alpha ~0.18; `fps 30` on the Pi.
 - **Transitions:** route change as in the cycle; view change through black (a true photo crossfade needs two
   `<image>` elements because the viewBoxes differ — later). Quiet hours (`quietHours: {from:'23:00', to:'06:00',
@@ -276,5 +278,7 @@ Bay-swim start), **China Beach / Lands End** (outside the Gate; strong current, 
 
 ## Status
 
-- 2026-08-25 — Phase 0 (rename) and Phase 1 (engine split, `js/engine/`) done on branch `engine-split`; the
-  combined app at `/` still serves as it did. Next: Phase 2, the Frame at `frame/`.
+- 2026-08-25 — Phase 0 (rename) and Phase 1 (engine split, `js/engine/`) merged; the combined app at `/` still
+  serves as it did.
+- 2026-08-25 — Phase 2, the Frame at `frame/` (branch `frame`): cycle, button decoder, overlay, presets,
+  transitions, Pi kit (kiosk URL, Pico `b`). Next: Phase 3, the Planner at `/`.

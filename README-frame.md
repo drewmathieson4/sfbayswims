@@ -1,8 +1,15 @@
-# The frame — building and running Aquatic Park on a Raspberry Pi
+# The frame — building and running the Frame on a Raspberry Pi
 
 A wall-hung picture frame: a matte 15.6" laptop panel behind a mat, a Raspberry Pi hidden on the
-back, one cord to the wall, three hidden buttons under the bottom rail, a light sensor so the
+back, one cord to the wall, one hidden button under the bottom rail, a light sensor so the
 picture dims with the room. From across the room it should pass for a framed aerial photo.
+
+The frame runs the **Frame app** (`frame/index.html`, `js/frame/`, see SPEC.md Product A): the view's swims
+play in turn, each starting from *now* and scaled to one minute; while a swim plays the time, the streaks and
+the current reading follow the swimmer; between swims the water is simply now. Museum labels only — top-left the
+view title and the time, top-right `63°F · flood 1.2 kn · wind W 12 kn` with `Alcatraz · 1:12` beneath it while a
+swim plays — and nothing else.
+Online you can try it at `/frame/` (click, double-click, triple-click and hold on the picture, or the space bar).
 
 Parts, prices and links are in the plan (`~/.claude/plans/ok-perfect-this-is-glimmering-galaxy.md`,
 "Parts list"). Prototype on the Pi 4 you own; the final board is decided by the frame-rate test (§5).
@@ -27,9 +34,11 @@ Parts, prices and links are in the plan (`~/.claude/plans/ok-perfect-this-is-gli
    | Unit | What |
    |---|---|
    | `aquatic-serve` (system) | `tools/serve.py` — threaded static server on `127.0.0.1:8000` (assets revalidate, the sensor file never caches), serves the light-sensor file as `/ambient.json` |
-   | `aquatic-kiosk` (user) | Chromium `--kiosk --app=http://127.0.0.1:8000/index.html?kiosk=1`, `Restart=always`; started by the compositor's autostart once Wayland is up |
+   | `aquatic-kiosk` (user) | Chromium `--kiosk --app=http://127.0.0.1:8000/frame/index.html?kiosk=1`, `Restart=always`; started by the compositor's autostart once Wayland is up |
    | `aquatic-ambient` (system) | `tools/pi/ambient.py` — VEML7700/BH1750 on I²C → `/run/aquatic/ambient.json` every 2 s; exits quietly if there is no sensor |
    | `aquatic-wifi-reset` (system) | `tools/pi/wifi_reset.py` — `w` held 3 s from the "Aquatic Buttons" board (● held 8 s) forgets saved Wi-Fi so the setup hotspot returns; it ignores every other keyboard |
+
+   The installer never overwrites `data/frame.local.json` — this frame's own presets (§3).
 
    Plus `/etc/cron.d/aquatic-bundles` (every December morning until next year's tide/current
    bundles exist; re-running the installer never overwrites bundles the frame generated) and, with
@@ -50,16 +59,23 @@ Parts, prices and links are in the plan (`~/.claude/plans/ok-perfect-this-is-gli
    `chrome://gpu` (plug in a keyboard and press `Esc` to leave kiosk briefly) should show
    *Canvas: Hardware accelerated*.
 
-## 2. Buttons (Pico as a USB keyboard)
+## 2. The button (Pico as a USB keyboard)
 
 Flash CircuitPython on a Pico / Pico 2, copy the `adafruit_hid` library folder into `/lib`, then
-copy `tools/pi/pico/code.py` and `boot.py` to the drive. Wire three momentary buttons to GND:
+copy `tools/pi/pico/code.py` and `boot.py` to the drive. Wire the button (● GP4) to GND; ◀ GP2 and ▶ GP3 may
+stay wired but the frame ignores them. The Pico only reports the button: `b` is held while ● is pressed (plus `w`
+after 8 s). The gestures are decoded in the browser (`js/frame/button.js`), so timings change with an app
+update, not a reflash:
 
-| Button | Pin | Gesture → key → app |
+| Gesture | Timing | Does |
 |---|---|---|
-| ◀ | GP2 | press…release → `←` held → tap = 5 min back, hold = accelerating rewind |
-| ▶ | GP3 | press…release → `→` held → forward |
-| ● | GP4 | tap → `↓` next route · double-tap → `p` photo mode (swimmer + overlay off) · triple-tap → `v` switch view (cove ↔ Bay) · hold 1–8 s then release → `n` back to *current* · hold 8 s → `w` held (forget Wi-Fi) |
+| click | press < 0.4 s | swimmer on / off (off = the water shows now) |
+| double-click | taps within 0.3 s | overlay (the three labels) on / off |
+| triple-click | | tidal movement (the streaks) on / off |
+| hold | 0.6 s — fires while still pressed | switch view (cove ↔ Bay) through black |
+| hold 8 s | | forget Wi-Fi (`w` → `wifi_reset.py`; the hotspot returns) |
+
+The switches and the view survive the nightly reload (`localStorage`; `persistSwitches` in the presets).
 
 `boot.py` names the board "Aquatic Buttons" and hides the CIRCUITPY drive so the Pi only ever sees
 a keyboard; hold ● while plugging the Pico in to get the drive back for editing (the serial console
@@ -67,15 +83,22 @@ stays on for debugging). `lsusb` on the Pi lists it as a keyboard.
 
 ## 3. What the frame does on its own
 
-- Route **stays put**; after 10 min without a button press while time-travelling it drifts back
-  to *current* (`kiosk.returnToNowS`). Display never blanks (wake lock + OS settings).
-- The swimmer waits at the start until a swim is started (`space` / the rail's ▶ start) and the streaks show
-  *now* meanwhile. No Pico gesture starts a swim yet — map ● tap to `space` in `tools/pi/pico/code.py` if the
-  frame should play them.
+- The swims cycle by themselves, in the view's order from a random first swim (again after every view change):
+  each starts from the current minute, lasts `swimSeconds` (60 s), holds a
+  second, fades, rests two seconds, then the next; a swim the current makes impossible plays its
+  fight and drift (`sweptSeconds`) with the caption *too much current · next 4:10pm*. Display never blanks
+  (wake lock + OS settings).
+- **Hidden presets** — `data/frame.json` in the repo, overridden by `data/frame.local.json` on this frame (not
+  in git; survives `install.sh`), then URL flags (`?view=bay&swimmer=0&swimSeconds=30&pace=1:40`). Keys: `view`
+  (`cove` | `bay` | `alternate` + `alternateEveryMin`), the three switches, `pace`, `swimSeconds`, `holdSeconds`,
+  `fadeSeconds`, `restSeconds`, `sweptSeconds`, `skipInfeasible`, `streaksFollowSwimmer`, `routes` (per view, an
+  id list or `null` = all), `crumbsPerSwim` (per view; 0 = none, the default), `icon` (`glyph` | `beacon`), `streakAlpha`, `labelScrim` (the vignette behind the top labels, 0–1), `maxFps`,
+  `quietHours` (`{ "from": "23:00", "to": "06:00", "mode": "still" | "dark" }`), `persistSwitches`,
+  `resetDaily`, `ambient`, `reloadAt`.
 - Live data refreshes on the app's own schedule; with no network it keeps animating from the
   bundled year (tides, currents for both views, water-temperature climatology shown with `≈`).
-- The nightly reload (`kiosk.reloadAt`, 04:00) picks up any app update copied to
-  `/opt/aquatic-park`. The chosen view survives it (`localStorage`).
+- The nightly reload (`reloadAt`, 04:00) picks up any app update copied to `/opt/aquatic-park`. The chosen
+  view and switches survive it (`localStorage`).
 - If every live fetch has failed for 3 minutes (`offlineHint`), the top-left corner shows
   *no wi-fi · join "aquatic-park" to set up*.
 

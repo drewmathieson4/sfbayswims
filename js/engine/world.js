@@ -63,7 +63,7 @@ export function buildWorld(data, env, refs) {
     const t0 = performance.now(), proj = createProjection(CONFIG.origin);
     if (world.geometry.type === 'mask' && world.field.type === 'cove') throw new Error(`world ${data.id}: the cove field needs zone geometry`);
     const geom = world.geometry.type === 'zones' ? buildGeometry(data.shoreline, data.zones, CONFIG, proj) : buildMaskGeometry(data.mask, data.maskMeta, proj);
-    const { routes } = buildRoutes(data.routes, data.landmarks, geom, { proj, followOffsetM: CONFIG.route.followOffsetM, keepRightM: CONFIG.route.keepRightM });
+    const { routes } = buildRoutes(data.routes, data.landmarks, geom, { proj, followOffsetM: CONFIG.route.followOffsetM, keepRightM: CONFIG.route.keepRightM, turnRadiusM: CONFIG.route.turnRadiusM });
     if (state.debug) checkLand(routes, geom);
     let extent = CONFIG.view.extent;
     if (!extent) {                                       // fit: the core box ∪ the routes, padded

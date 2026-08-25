@@ -11,7 +11,10 @@ Escape from Alcatraz, the Golden Gate, Golden Gate → Aquatic Park, Bridge to B
 Angel Island → Aquatic Park — over a current field blended from 43 NOAA stations. When a swim can't be held against
 the current the rail says so, names the next and best start in the coming 48 h, and the swimmer is swept away.
 
-This is becoming two products on one engine — a **Planner** (this page) and a wall-hung **Frame** — see [SPEC.md](SPEC.md).
+This is two products on one engine — the **Planner** (this page, being built out) and the wall-hung **Frame**
+(`frame/` — the view's swims play in turn, 20 seconds each from now, with the water following the swimmer; one
+button: click swimmer, double-click overlay, triple-click streaks, hold to switch view) — see [SPEC.md](SPEC.md)
+and [README-frame.md](README-frame.md).
 
 Made as a wedding gift for Jean Marc. `ARCHITECTURE.md` walks through every file.
 
@@ -47,6 +50,7 @@ wake lock, nightly reload, remembers the view, drifts back to *current* after 10
 
 ```
 index.html  js/main.js  css/app.css       the app's page, entry and UI sheet
+frame/index.html  js/frame/  css/frame.css  data/frame.json   the Frame: presets, cycle, button, overlay (+ kiosk, ambient)
 js/engine/  css/engine.css                the shared engine: boot, runtime, worlds, fields, physics, swimmer, streaks, data (23 modules)
 js/planner/ hud.js keys.js                the HUD, rail and keys        js/frame/ kiosk.js ambient.js   kiosk behaviour, room-light dimming
 data/tides-2026.json                      the year's tide extremes (shared)
