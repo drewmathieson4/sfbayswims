@@ -58,5 +58,8 @@ if (state.kiosk) kioskMode();
 else { let t = null; const wake = () => { html.classList.remove('idle'); clearTimeout(t); t = setTimeout(() => html.classList.add('idle'), 3000); }; window.addEventListener('pointermove', wake); wake(); }
 await b.activateFirst();
 cycle.start();
+{ const { fmtDateYear: fmtDate } = await import('../engine/data.js');            // a notice when the bundled predictions are about to run out
+  const check = () => { const h = b.services.horizon(); b.services.setHint('horizon', isFinite(h) && (h - Date.now()) / 86400e3 < (APP.CONFIG.horizonWarnDays ?? 21) ? `predictions end ${fmtDate(h)} · update the frame` : ''); };
+  check(); setInterval(check, 3600e3); }
 window.APP.frame = { presets, cycle, button, switchView };
 if (state.kiosk) { try { (await import('./ambient.js')).startAmbient(); } catch (e) { console.warn('ambient', e.message); } }

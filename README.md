@@ -15,7 +15,8 @@ the current it says so, names the next and best start in the coming 48 h, and th
 This is two products on one engine — the **Planner** (this page) and the wall-hung **Frame**
 (`frame/` — the view's swims play in turn, 20 seconds each from now, with the water following the swimmer; one
 button: click swimmer, double-click overlay, triple-click streaks, hold to switch view) — see [SPEC.md](SPEC.md)
-and [README-frame.md](README-frame.md).
+and [README-frame.md](README-frame.md). What the apps depend on, how each source can fail and the yearly bundles
+(refreshed by a quarterly GitHub Action) are in [DATA.md](DATA.md).
 
 Made as a wedding gift for Jean Marc. `ARCHITECTURE.md` walks through every file.
 
@@ -50,7 +51,8 @@ you draw (time, finish, legs, best starts) and warns if a leg crosses land. It t
 plans**, which keep favourites in the browser. The **timeline** shows the reference current for 48 hours (flood above
 the axis, ebb below), the tide height (dashed), slack times, night, the swim as a bar (red where swept) and *now*. Hover (or tap on a phone) anywhere on the
 water for the current at that point and moment. *copy link* puts the whole plan in the URL; *settings · about* has
-units, the map layers, the keys, the data sources and what the numbers do and don't mean.
+units, the map layers, the keys and **report a bug** (a diagnostic report to copy or file as a GitHub issue); *about the
+numbers* (the footer link) explains what they mean and shows each data source with its age.
 
 **Keys:** `← →` start ±5 min (hold to accelerate; `⇧` for ±1 h) · `↑ ↓` swim · `r` the other way · `n` now · `space`
 preview / pause · `s` streaks · `c` current arrows · `l` legs · `- +` pace ±1 s · `v` next spot · `?` the settings sheet.

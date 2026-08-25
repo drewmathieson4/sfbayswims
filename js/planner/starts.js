@@ -4,7 +4,7 @@
 // Filters: daylight (the whole swim between sunrise and sunset), duration and weekends. Computed in chunks so the page stays alive; memoised per swim / pace / data.
 import { CONFIG } from '../engine/config.js';
 import { state, set, on, physicsTime } from '../engine/state.js';
-import { tzParts, localToEpoch, fmtTime, fmtDate } from '../engine/data.js';
+import { tzParts, localToEpoch, fmtTime, fmtDate, fmtDateYear } from '../engine/data.js';
 import { fmtMMSS } from '../engine/format.js';
 import { scanStarts, slackNear } from '../engine/swim.js';
 import { sunTimes } from '../engine/sun.js';
@@ -26,7 +26,8 @@ export function createStarts({ b }) {
     if (date.value) { const m = /^(\d{4})-(\d\d)-(\d\d)$/.exec(date.value); if (m) { const t0 = localToEpoch(+m[1], +m[2], +m[3], 0, 0); return range(t0, t0 + 30 * 3600e3); } }
     const t0 = Math.ceil(physicsTime() / STEP) * STEP; return range(t0, t0 + (+cycles.value || 4) * CYCLE);
   }
-  const range = (a, b) => { const r = []; for (let t = a; t <= b; t += STEP) r.push(t); return r; };
+  const range = (a, c) => { const hz = b.services.horizon(), end = Math.min(c, hz); clipped = c > hz; const r = []; for (let t = a; t <= end; t += STEP) r.push(t); return r; };
+  let clipped = false;
   async function scanRoute(r, ts, token) {
     const key = `${state.world}:${r.id}:${state.paceMps.toFixed(4)}:${state.data.version}:${CONFIG.swim.burstReserveS}:${CONFIG.swim.minGroundMps}:${ts[0]}:${ts.length}`;
     if (memo.has(key)) return memo.get(key);
@@ -56,7 +57,8 @@ export function createStarts({ b }) {
   }
   function render(rows, tried) {
     out.innerHTML = '';
-    if (!rows.length) { out.textContent = `no start fits (${tried} tried)`; return; }
+    if (clipped) { const n = document.createElement('div'); n.className = 'hint'; n.textContent = `searched only as far as the bundled predictions reach (${fmtDateYear(b.services.horizon())})`; out.appendChild(n); }
+    if (!rows.length) { const n = document.createElement('div'); n.className = 'hint'; n.textContent = `no start fits (${tried} tried)`; out.appendChild(n); return; }
     const fastest = rows.reduce((a, c) => (c.s < a.s ? c : a));
     for (const e of rows) {
       const slack = live.field ? slackNear(live.field, e.t) : null;

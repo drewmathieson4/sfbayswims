@@ -27,6 +27,7 @@ export function localToEpoch(y, mo, d, hh, mi, tz = TZ) {
 export function fmtYMD(t, tz = TZ) { const p = tzParts(t, tz); return `${p.y}${String(p.mo).padStart(2, '0')}${String(p.d).padStart(2, '0')}`; }
 export function parseCoops(s) { const m = /^(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)/.exec(s); return localToEpoch(+m[1], +m[2], +m[3], +m[4], +m[5]); }
 export function fmtTime(t) { return new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(t)).replace(' ', '').toLowerCase(); }
+export function fmtDateYear(t) { return new Intl.DateTimeFormat('en-US', { timeZone: TZ, month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(t)); }
 export function fmtDate(t) { return new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(t)); }
 
 // ---- fetch with a timeout ----

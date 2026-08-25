@@ -1,4 +1,6 @@
-// The app's observable state: plain object + set()/on(). No framework.
+// The app's observable state: plain object + set()/on(). No framework. A listener that throws is reported and skipped —
+// one broken render never takes the rest of the page down.
+import { reportError } from './health.js';
 const listeners = new Map();
 
 export const state = {
@@ -19,14 +21,14 @@ export const state = {
   kiosk: false,
   still: false,            // ?still=1 → zero current (physics sanity)
   view: null,              // the fitted view (metres ↔ pixels), set by main.js on resize
-  data: { waterTemp: null, wind: null, version: 0, sources: {} },   // version bumps on every live-data change → fields drop their cache
+  data: { waterTemp: null, wind: null, version: 0, sources: {}, health: {} },   // version bumps on every live-data change → fields drop their cache; health: per source { ok, t, source | err }
   physics: null,           // { at, byRoute: Map, ms }
 };
 
 export function set(patch) {
   const changed = [];
   for (const k of Object.keys(patch)) if (state[k] !== patch[k]) { state[k] = patch[k]; changed.push(k); }
-  for (const k of changed) for (const fn of listeners.get(k) || []) fn(state[k], state);
+  for (const k of changed) for (const fn of listeners.get(k) || []) { try { fn(state[k], state); } catch (e) { console.error(`listener for '${k}':`, e); reportError(e.message, `on('${k}')`); } }
   return changed.length > 0;
 }
 export function on(key, fn) {

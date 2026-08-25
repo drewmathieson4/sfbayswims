@@ -6,6 +6,7 @@ import { fmtTime, fmtDate } from '../engine/data.js';
 import { fmtTemp } from '../engine/format.js';
 
 const $ = id => document.getElementById(id);
+const ago = t => { const m = Math.round((Date.now() - t) / 60000); return m < 60 ? `${m} min ago` : m < 2880 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`; };
 const compass = d => ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(((d % 360) + 360) % 360 / 45) % 8];
 
 export function createHud({ live, refs }) {
@@ -20,12 +21,14 @@ export function createHud({ live, refs }) {
   function renderWater() {
     const w = state.data.waterTemp;
     if (!w) { water.textContent = 'water …'; return; }
-    water.innerHTML = `water ${w.approx ? '<span class="approx">≈</span>' : ''}${fmtTemp(w.degF)}${scrubbed() ? ' <span class="approx">· now</span>' : ''}`;
+    const old = !w.approx && Date.now() - w.t > CONFIG.stale.waterH * 3600e3;                  // a live reading gone stale shows its age
+    water.innerHTML = `water ${w.approx || old ? '<span class="approx">≈</span>' : ''}${fmtTemp(w.degF)}${old ? ` <span class="approx">· ${ago(w.t)}</span>` : scrubbed() ? ' <span class="approx">· now</span>' : ''}`;
   }
   function renderWind() {
     const w = state.data.wind;
     if (!w || (scrubbed() && CONFIG.hud.scrubbedWind === 'hide')) { wind.textContent = ''; return; }
-    wind.textContent = `wind ${w.dirDeg != null ? compass(w.dirDeg) + ' ' : ''}${Math.round(w.kn)} kn${scrubbed() ? ' · now' : ''}`;
+    const old = Date.now() - w.t > CONFIG.stale.windH * 3600e3;
+    wind.textContent = `wind ${w.dirDeg != null ? compass(w.dirDeg) + ' ' : ''}${Math.round(w.kn)} kn${old ? ` · ${ago(w.t)}` : scrubbed() ? ' · now' : ''}`;
   }
   function renderCurrent() {
     if (!live.field) { current.textContent = ''; return; }
@@ -39,7 +42,7 @@ export function createHud({ live, refs }) {
     tide.textContent = h == null ? '' : `tide ${h.toFixed(1)} ft${nx ? ` · ${nx.type === 'H' ? 'high' : 'low'} ${fmtTime(nx.t)}` : ''}`;
   }
   const all = () => { renderClock(); renderCurrent(); renderTide(); };
-  on('now', () => { if (!scrubbed() || state.swimming) all(); });
+  on('now', () => { if (!scrubbed() || state.swimming) all(); if (state.now % 60000 < 1000) { renderWater(); renderWind(); } });   // ages tick once a minute
   on('swimming', all); on('selectedTime', () => { all(); renderWater(); renderWind(); });
   on('data', () => { renderWater(); renderWind(); renderCurrent(); renderTide(); });
   on('world', all);

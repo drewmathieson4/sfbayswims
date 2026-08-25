@@ -2,7 +2,7 @@
 // settings / about sheet; the phone handle. Everything reads state and writes it with set(); the runtime does the rest.
 import { CONFIG } from '../engine/config.js';
 import { state, set, on, effectiveTime } from '../engine/state.js';
-import { tzParts, localToEpoch, fmtTime, fmtDate } from '../engine/data.js';
+import { tzParts, localToEpoch, fmtTime, fmtDate, fmtDateYear } from '../engine/data.js';
 import { units, setUnits, fmtMMSS, fmtDist, fmtPace, fmtPaceOnly, parsePace, paceUnit, per100 } from '../engine/format.js';
 import { toggleShow } from '../engine/show.js';
 import { KN } from '../engine/current.js';
@@ -78,7 +78,7 @@ export function createPanel({ b, settings, saveSettings, recomputePhysics, draw 
   burst.checked = settings.swim.burst; reserve.value = settings.swim.reserveS; floor.value = settings.swim.floorMps;
 
   // ---- result ----
-  const rName = $('route-name'), rNotes = $('route-notes'), rDist = $('route-dist'), rTotal = $('route-total'), rEta = $('route-eta'), rMax = $('route-max'), rSun = $('route-sun'), note = $('route-note'), best = $('route-best'), next = $('route-next');
+  const rName = $('route-name'), rNotes = $('route-notes'), rDist = $('route-dist'), rTotal = $('route-total'), rEta = $('route-eta'), rMax = $('route-max'), rSun = $('route-sun'), note = $('route-note'), rHorizon = $('route-horizon'), best = $('route-best'), next = $('route-next');
   const elapsed = $('elapsed'), elapsedK = $('elapsed-k'), speed = $('speed'), startBtn = $('start-swim'), tempo = $('tempo'), tempoV = $('tempo-v');
   /** The strongest current met along the swim and where: samples the field along the profile. */
   function strongest(r, res) {
@@ -108,6 +108,7 @@ export function createPanel({ b, settings, saveSettings, recomputePhysics, draw 
       const end = res.feasible ? fin : at + (res.profile.sweptAt ?? 0) * 1000;
       const dark = s.dawn != null && (at < s.dawn || end > s.dusk), dim = !dark && s.sunrise != null && (at < s.sunrise || end > s.sunset);
       rSun.innerHTML = s.sunrise ? `${fmtTime(s.sunrise)} – ${fmtTime(s.sunset)}${dark ? ' <em class="warn">· in the dark</em>' : dim ? ' <em class="warn">· at dusk</em>' : ''}` : '—'; }
+    { const hz = b.services.horizon(), fin = at + res.totalSeconds * 1000; rHorizon.textContent = isFinite(hz) && fin > hz ? `beyond the bundled predictions (they reach ${fmtDateYear(hz)})` : ''; }
     if (!res.feasible) { const sw = res.profile.sweptAt, leg = r.legs[Math.min(r.legs.length - 1, res.profile.leg[Math.max(0, res.profile.n - 1)])]; note.textContent = `too much current · swept ${fmtMMSS(sw ?? 0)} in${leg?.to?.name ? ` near ${leg.to.name}` : ''}`; }
     else note.textContent = '';
     renderWindows();
@@ -133,16 +134,28 @@ export function createPanel({ b, settings, saveSettings, recomputePhysics, draw 
   // ---- tools: share + the sheet ----
   const share = $('share');
   share.onclick = async () => { const url = planUrl(draw?.custom); try { await navigator.clipboard.writeText(url); share.textContent = 'link copied'; } catch { prompt('copy this link', url); } setTimeout(() => { share.textContent = 'copy link'; }, 1500); };
-  const sheet = $('sheet');
-  const openSheet = () => { sheet.hidden = false; renderSheet(); }, closeSheet = () => { sheet.hidden = true; };
-  $('settings-btn').onclick = openSheet; $('about').onclick = e => { e.preventDefault(); openSheet(); }; $('sheet-close').onclick = closeSheet;
-  sheet.addEventListener('click', e => { if (e.target === sheet) closeSheet(); });
+  const sheet = $('sheet'), about = $('about');
+  const openSheet = () => { about.hidden = true; sheet.hidden = false; renderSheet(); }, closeSheet = () => { sheet.hidden = true; about.hidden = true; };
+  const openAbout = () => { sheet.hidden = true; about.hidden = false; renderAbout(); };
+  const openReport = () => { openSheet(); $('report-notes').focus(); $('report-notes').scrollIntoView({ block: 'center' }); };
+  $('settings-btn').onclick = openSheet; $('about-link').onclick = e => { e.preventDefault(); openAbout(); };
+  $('to-about').onclick = e => { e.preventDefault(); openAbout(); }; $('to-settings').onclick = e => { e.preventDefault(); openSheet(); }; $('to-report').onclick = e => { e.preventDefault(); openReport(); };
+  for (const btn of document.querySelectorAll('.sheet .close')) btn.onclick = closeSheet;
+  for (const el of [sheet, about]) el.addEventListener('click', e => { if (e.target === el) closeSheet(); });
   function renderSheet() {
     for (const btn of $('u-dist').children) btn.classList.toggle('on', btn.dataset.v === units.dist);
     for (const btn of $('u-temp').children) btn.classList.toggle('on', btn.dataset.v === units.temp);
     for (const btn of $('layers').children) { const k = btn.dataset.k; btn.classList.toggle('on', k === 'arrows' ? state.debug : k === 'colour' || k === 'tideLine' ? !!settings[k] : state.show[k]); }
-    const src = state.data.sources || {}, w = state.data.waterTemp, wd = state.data.wind;
-    $('sources').textContent = `Sources: NOAA CO-OPS tides (North Point) and current predictions; ${w ? `water temperature ${w.source || src.waterTemp || 'USGS Alcatraz'}` : 'water temperature pending'}${wd ? `; wind ${wd.source || 'NWS Fort Point'}` : ''}. Times are Pacific.`;
+  }
+  const ago = t => { const m = Math.round((Date.now() - t) / 60000); return m < 60 ? `${m} min ago` : m < 2880 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`; };
+  function renderAbout() {
+    const w = state.data.waterTemp, wd = state.data.wind, h = state.data.health || {}, parts = [];
+    parts.push(w ? `Water temperature: ${w.approx ? 'the day-of-year climatology (no live reading)' : `${w.source || 'USGS Alcatraz'}, read ${ago(w.t)}`}${h.waterTemp && !h.waterTemp.ok ? ` — last fetch failed (${h.waterTemp.err})` : ''}.` : 'Water temperature: not loaded yet.');
+    parts.push(wd ? `Wind: ${wd.source || 'NWS Fort Point'}, read ${ago(wd.t)}.` : `Wind: none${h.wind && !h.wind.ok ? ` (${h.wind.err})` : ''}.`);
+    parts.push(`Tides: NOAA North Point extremes — bundled for the year${h.tides ? (h.tides.ok ? `, live window refreshed ${ago(h.tides.t)}` : `, live fetch failed ${ago(h.tides.t)}`) : ''}. Currents: NOAA predictions bundled for the year${state.world === 'cove' ? (h.currents ? (h.currents.ok ? `, the Alcatraz station's live window refreshed ${ago(h.currents.t)}` : `, live fetch failed ${ago(h.currents.t)}`) : '') : ' (the Bay has no live feed)'}.`);
+    $('sources').textContent = parts.join(' ');
+    const hz = b.services.horizon();
+    $('horizon').textContent = isFinite(hz) ? `Bundled predictions reach ${fmtDateYear(hz)}; beyond that the app has nothing to go on until next year's bundles are added.` : '';
   }
   for (const btn of $('u-dist').children) btn.onclick = () => { setUnits({ dist: btn.dataset.v }); settings.units = { ...units }; saveSettings(); rerenderUnits(); renderSheet(); };
   for (const btn of $('u-temp').children) btn.onclick = () => { setUnits({ temp: btn.dataset.v }); settings.units = { ...units }; saveSettings(); rerenderUnits(); renderSheet(); };
@@ -183,7 +196,7 @@ export function createPanel({ b, settings, saveSettings, recomputePhysics, draw 
   on('swimming', renderStartBtn); on('paused', renderStartBtn); on('tempo', renderTempo);
   renderSpots(); renderSwims(); renderStart(); renderPace(); renderRoute(); renderPeek(); renderStartBtn(); renderTempo();
   return {
-    reverse, cycle, toggleArrows, openSheet, closeSheet, setTime,
+    reverse, cycle, toggleArrows, openSheet, closeSheet, openAbout, openReport, setTime,
     onUnits: fn => unitsListeners.push(fn), onSetting: fn => settingListeners.push(fn),
     setElapsed: (s, tempoX, mps) => { elapsed.textContent = fmtMMSS(s); elapsedK.textContent = state.tempo && state.tempo !== 1 ? `elapsed · ${Math.round(tempoX)}×` : 'elapsed'; speed.textContent = fmtPace(mps); },
   };
