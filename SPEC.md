@@ -283,5 +283,7 @@ Bay-swim start), **China Beach / Lands End** (outside the Gate; strong current, 
 - 2026-08-25 — Phase 2, the Frame at `frame/` (branch `frame`): cycle, button decoder, overlay, presets,
   transitions, Pi kit (kiosk URL, Pico `b`); merged.
 - 2026-08-25 — Phase 3, the Planner v1 at `/` (branch `planner`): panel, HUD, timeline, direction twins, preview,
-  units, share links, probe, settings/about sheet, keys, phone layout; the legacy combined app removed. Next:
-  Phase 4 (legs + route colouring, best starts over n tide cycles / every swim / a date, favourites).
+  units, share links, probe, settings/about sheet, keys, phone layout; the legacy combined app removed.
+- 2026-08-25 — Phase 4 (branch `planner-2`): legs table + route coloured by speed, best starts (this swim / every
+  swim over n tide cycles, or a date; daylight / duration / weekend filters; slack relation), daylight row, tide-height
+  line, per-swim notes, saved plans. Next: custom-drawn swims (Phase 5), then compare, calendar, lighter bundles, spots.

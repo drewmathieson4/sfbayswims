@@ -1,0 +1,71 @@
+// Best starts, on request: this swim over the next n tide cycles, every swim over n cycles, or a chosen date — starts
+// every 15 min ranked fastest first, with the finish, daylight and the slack relation; filters for daylight, duration
+// and weekends. Computed in chunks so the page stays alive; memoised per swim / pace / data.
+import { CONFIG } from '../engine/config.js';
+import { state, set, on, physicsTime } from '../engine/state.js';
+import { tzParts, localToEpoch, fmtTime, fmtDate } from '../engine/data.js';
+import { fmtMMSS } from '../engine/format.js';
+import { scanStarts, slackNear } from '../engine/swim.js';
+import { sunTimes } from '../engine/sun.js';
+
+const CYCLE = 745 * 60000, STEP = 15 * 60000, $ = id => document.getElementById(id);
+const fmtWhen = t => `${fmtDate(t).replace(/,.*$/, '')} ${fmtTime(t)}`;
+
+export function createStarts({ b }) {
+  const live = b.live, scope = $('bs-scope'), cycles = $('bs-cycles'), date = $('bs-date'), daylight = $('bs-daylight'), maxDur = $('bs-max'), weekends = $('bs-weekends');
+  const btn = $('bs-find'), prog = $('bs-progress'), out = $('bs-results');
+  const memo = new Map(); let run = 0;
+  const yieldNow = () => new Promise(r => setTimeout(r, 0));
+  const listed = () => (live.routes || []).filter(r => !r.reversed);          // every swim from routes.json, both Bridge-to-Bridge directions
+  const current = () => (live.routes || []).find(r => r.id === state.routeId);
+  const isDay = (t0, t1) => { const s = sunTimes(t0, CONFIG.origin.lat, CONFIG.origin.lon); return s.dawn != null && t0 >= s.dawn && t1 <= (t1 > s.dusk ? sunTimes(t0 + 86400e3, CONFIG.origin.lat, CONFIG.origin.lon).dusk ?? -Infinity : s.dusk); };
+  const isWeekend = t => { const p = tzParts(t); return [0, 6].includes(new Date(Date.UTC(p.y, p.mo - 1, p.d)).getUTCDay()); };
+  function times() {
+    if (date.value) { const m = /^(\d{4})-(\d\d)-(\d\d)$/.exec(date.value); if (m) { const t0 = localToEpoch(+m[1], +m[2], +m[3], 0, 0); return range(t0, t0 + 30 * 3600e3); } }
+    const t0 = Math.ceil(physicsTime() / STEP) * STEP; return range(t0, t0 + (+cycles.value || 4) * CYCLE);
+  }
+  const range = (a, b) => { const r = []; for (let t = a; t <= b; t += STEP) r.push(t); return r; };
+  async function scanRoute(r, ts, token) {
+    const key = `${state.world}:${r.id}:${state.paceMps.toFixed(4)}:${state.data.version}:${CONFIG.swim.burstReserveS}:${CONFIG.swim.minGroundMps}:${ts[0]}:${ts.length}`;
+    if (memo.has(key)) return memo.get(key);
+    const res = [];
+    for (let i = 0; i < ts.length; i += 12) { if (token !== run) return null; res.push(...scanStarts(r, ts.slice(i, i + 12), state.paceMps, live.field)); await yieldNow(); }
+    memo.set(key, res); if (memo.size > 40) memo.delete(memo.keys().next().value);
+    return res;
+  }
+  const filters = e => (!daylight.checked || e.day) && (!(+maxDur.value) || e.s <= (+maxDur.value) * 60) && (!weekends.checked || isWeekend(e.t));
+  async function find() {
+    const token = ++run, ts = times(), swims = scope.value === 'all' ? listed() : [current()].filter(Boolean);
+    if (!swims.length || !live.field) return;
+    btn.disabled = true; out.innerHTML = ''; prog.hidden = false; prog.max = swims.length * ts.length; prog.value = 0;
+    const rows = [];
+    for (const r of swims) {
+      const res = await scanRoute(r, ts, token); if (!res) { btn.disabled = false; prog.hidden = true; return; }
+      prog.value += ts.length;
+      const good = res.filter(e => e.feasible).map(e => ({ ...e, r, finish: e.t + e.s * 1000, day: isDay(e.t, e.t + e.s * 1000) })).filter(filters);
+      good.sort((a, c) => a.s - c.s || (c.day - a.day) || a.t - c.t);
+      if (scope.value === 'all') { if (good[0]) rows.push(good[0]); }
+      else rows.push(...good.slice(0, 12));
+    }
+    if (scope.value === 'all') rows.sort((a, c) => a.s - c.s);
+    prog.hidden = true; btn.disabled = false;
+    render(rows, ts.length * swims.length);
+  }
+  function render(rows, tried) {
+    out.innerHTML = '';
+    if (!rows.length) { out.textContent = `no start fits (${tried} tried)`; return; }
+    for (const e of rows) {
+      const slack = live.field ? slackNear(live.field, e.t) : null;
+      const rel = slack ? `${Math.abs(slack.minutes)} min ${slack.minutes >= 0 ? 'after' : 'before'} slack` : '';
+      const row = document.createElement('button'); row.type = 'button'; row.className = 'bs';
+      row.innerHTML = `<span class="w">${fmtWhen(e.t)}${scope.value === 'all' ? ` · ${e.r.name}` : ''}</span><span class="s">${fmtMMSS(e.s)} · ${fmtTime(e.finish)}${e.day ? '' : ' · <em>dark</em>'}</span><span class="rel">${rel}</span>`;
+      row.onclick = () => { if (state.routeId !== e.r.id) set({ routeId: e.r.id }); set({ selectedTime: e.t }); };
+      out.appendChild(row);
+    }
+  }
+  btn.onclick = find; $('bs-clear').onclick = () => { date.value = ''; };
+  scope.onchange = () => { cycles.disabled = false; };
+  on('routeId', () => { if (scope.value !== 'all') { out.innerHTML = ''; } });
+  on('world', () => { out.innerHTML = ''; memo.clear(); });
+  return { find };
+}

@@ -7,6 +7,7 @@ import { units, setUnits, fmtMMSS, fmtDist, fmtPace, fmtPaceOnly, parsePace, pac
 import { toggleShow } from '../engine/show.js';
 import { KN } from '../engine/current.js';
 import { planUrl } from './share.js';
+import { sunTimes } from '../engine/sun.js';
 
 const $ = id => document.getElementById(id);
 const fmtWhen = t => `${fmtDate(t).replace(/,.*$/, '')} ${fmtTime(t)}`;
@@ -77,7 +78,7 @@ export function createPanel({ b, settings, saveSettings, recomputePhysics }) {
   burst.checked = settings.swim.burst; reserve.value = settings.swim.reserveS; floor.value = settings.swim.floorMps;
 
   // ---- result ----
-  const rName = $('route-name'), rDist = $('route-dist'), rTotal = $('route-total'), rEta = $('route-eta'), rMax = $('route-max'), note = $('route-note'), best = $('route-best'), next = $('route-next');
+  const rName = $('route-name'), rNotes = $('route-notes'), rDist = $('route-dist'), rTotal = $('route-total'), rEta = $('route-eta'), rMax = $('route-max'), rSun = $('route-sun'), note = $('route-note'), best = $('route-best'), next = $('route-next');
   const elapsed = $('elapsed'), elapsedK = $('elapsed-k'), speed = $('speed'), startBtn = $('start-swim'), tempo = $('tempo'), tempoV = $('tempo-v');
   /** The strongest current met along the swim and where: samples the field along the profile. */
   function strongest(r, res) {
@@ -95,14 +96,17 @@ export function createPanel({ b, settings, saveSettings, recomputePhysics }) {
   }
   function renderRoute() {
     const r = current(); if (!r) return;
-    rName.textContent = r.name; rDist.textContent = fmtDist(r.meters);
+    rName.textContent = r.name; rNotes.textContent = r.notes || ''; rDist.textContent = fmtDist(r.meters);
     const res = state.physics?.byRoute?.get(r.id);
-    if (!res) { rTotal.textContent = '…'; rEta.textContent = '…'; rMax.textContent = '…'; note.textContent = ''; renderWindows(); return; }
+    if (!res) { rTotal.textContent = '…'; rEta.textContent = '…'; rMax.textContent = '…'; rSun.textContent = '…'; note.textContent = ''; renderWindows(); return; }
     const at = state.physics.at;
     rTotal.textContent = res.feasible ? fmtMMSS(res.totalSeconds) : '—';
     rEta.textContent = res.feasible ? fmtTime(at + res.totalSeconds * 1000) : '—';
     const s = strongest(r, { ...res, at });
     rMax.textContent = s ? `${s.kn.toFixed(1)} kn${s.where ? ` · ${s.where}` : ''}` : '—';
+    { const s = sunTimes(at, CONFIG.origin.lat, CONFIG.origin.lon), fin = at + res.totalSeconds * 1000;   // daylight: the swim against civil twilight
+      const dark = s.dawn != null && (at < s.dawn || (res.feasible && fin > s.dusk));
+      rSun.innerHTML = s.sunrise ? `${fmtTime(s.sunrise)} – ${fmtTime(s.sunset)}${dark ? ' <em class="warn">· in the dark</em>' : ''}` : '—'; }
     if (!res.feasible) { const sw = res.profile.sweptAt, leg = r.legs[Math.min(r.legs.length - 1, res.profile.leg[Math.max(0, res.profile.n - 1)])]; note.textContent = `too much current · swept ${fmtMMSS(sw ?? 0)} in${leg?.to?.name ? ` near ${leg.to.name}` : ''}`; }
     else note.textContent = '';
     renderWindows();
@@ -135,17 +139,38 @@ export function createPanel({ b, settings, saveSettings, recomputePhysics }) {
   function renderSheet() {
     for (const btn of $('u-dist').children) btn.classList.toggle('on', btn.dataset.v === units.dist);
     for (const btn of $('u-temp').children) btn.classList.toggle('on', btn.dataset.v === units.temp);
-    for (const btn of $('layers').children) btn.classList.toggle('on', btn.dataset.k === 'arrows' ? state.debug : state.show[btn.dataset.k]);
+    for (const btn of $('layers').children) { const k = btn.dataset.k; btn.classList.toggle('on', k === 'arrows' ? state.debug : k === 'colour' || k === 'tideLine' ? !!settings[k] : state.show[k]); }
     const src = state.data.sources || {}, w = state.data.waterTemp, wd = state.data.wind;
     $('sources').textContent = `Sources: NOAA CO-OPS tides (North Point) and current predictions; ${w ? `water temperature ${w.source || src.waterTemp || 'USGS Alcatraz'}` : 'water temperature pending'}${wd ? `; wind ${wd.source || 'NWS Fort Point'}` : ''}. Times are Pacific.`;
   }
   for (const btn of $('u-dist').children) btn.onclick = () => { setUnits({ dist: btn.dataset.v }); settings.units = { ...units }; saveSettings(); rerenderUnits(); renderSheet(); };
   for (const btn of $('u-temp').children) btn.onclick = () => { setUnits({ temp: btn.dataset.v }); settings.units = { ...units }; saveSettings(); rerenderUnits(); renderSheet(); };
-  for (const btn of $('layers').children) btn.onclick = () => { const k = btn.dataset.k; if (k === 'arrows') toggleArrows(); else { toggleShow(k); settings[k] = state.show[k]; saveSettings(); } renderSheet(); };
+  for (const btn of $('layers').children) btn.onclick = () => { const k = btn.dataset.k; if (k === 'arrows') toggleArrows(); else if (k === 'colour' || k === 'tideLine') { settings[k] = !settings[k]; saveSettings(); for (const fn of settingListeners) fn(k); } else { toggleShow(k); settings[k] = state.show[k]; saveSettings(); } renderSheet(); };
+  const settingListeners = [];
   function toggleArrows() { set({ debug: !state.debug }); html.classList.toggle('debug', state.debug); settings.arrows = state.debug; saveSettings(); }
   $('reset').onclick = () => { try { localStorage.removeItem('plan.settings'); } catch {} location.href = location.pathname; };
   let unitsListeners = [];
-  const rerenderUnits = () => { renderSwims(); renderPace(); renderRoute(); for (const fn of unitsListeners) fn(); };
+  const rerenderUnits = () => { renderSwims(); renderPace(); renderRoute(); renderFavs(); for (const fn of unitsListeners) fn(); };
+
+  // ---- saved plans (localStorage plan.favourites) ----
+  const favs = $('favs');
+  const loadFavs = () => { try { return JSON.parse(localStorage.getItem('plan.favourites') || '[]'); } catch { return []; } };
+  const saveFavs = list => { try { localStorage.setItem('plan.favourites', JSON.stringify(list)); } catch {} };
+  function renderFavs() {
+    favs.innerHTML = '';
+    for (const [i, f] of loadFavs().entries()) {
+      const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'fav';
+      btn.innerHTML = `<span>${f.name}</span><span class="x" title="forget">×</span><span class="d">${f.t ? fmtWhen(f.t) : 'now'} · ${fmtPaceOnly(f.pace)} ${paceUnit()}</span>`;
+      btn.onclick = async e => {
+        if (e.target.classList.contains('x')) { const l = loadFavs(); l.splice(i, 1); saveFavs(l); renderFavs(); return; }
+        if (f.world !== state.world) await b.switchWorld(f.world);
+        set({ routeId: f.route, selectedTime: f.t, paceMps: f.pace });
+      };
+      favs.appendChild(btn);
+    }
+  }
+  $('fav-save').onclick = () => { const r = current(); if (!r) return; const l = loadFavs(); l.unshift({ name: `${r.name} · ${state.selectedTime ? fmtWhen(state.selectedTime) : 'now'}`, world: state.world, route: r.id, t: state.selectedTime, pace: state.paceMps }); saveFavs(l.slice(0, 20)); renderFavs(); };
+  renderFavs();
 
   // ---- wiring ----
   on('world', () => { renderSpots(); renderSwims(); renderRoute(); renderPeek(); renderTempo(); });
@@ -157,7 +182,7 @@ export function createPanel({ b, settings, saveSettings, recomputePhysics }) {
   renderSpots(); renderSwims(); renderStart(); renderPace(); renderRoute(); renderPeek(); renderStartBtn(); renderTempo();
   return {
     reverse, cycle, toggleArrows, openSheet, closeSheet, setTime,
-    onUnits: fn => unitsListeners.push(fn),
+    onUnits: fn => unitsListeners.push(fn), onSetting: fn => settingListeners.push(fn),
     setElapsed: (s, tempoX, mps) => { elapsed.textContent = fmtMMSS(s); elapsedK.textContent = state.tempo && state.tempo !== 1 ? `elapsed · ${Math.round(tempoX)}×` : 'elapsed'; speed.textContent = fmtPace(mps); },
   };
 }

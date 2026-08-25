@@ -108,6 +108,24 @@ export function positionAt(profile, tau) {
   return { x: x[lo] + (x[hi] - x[lo]) * f, y: y[lo] + (y[hi] - y[lo]) * f, legIndex: leg[lo], hdg: (hdg[lo] + dh * f + 360) % 360, effort: eff[lo], g, i: lo };
 }
 
+/** A batch of candidate starts: { t, s, feasible, sweptAt } for each (the planner chunks the batches). */
+export function scanStarts(route, times, vs, field) {
+  return times.map(t => { const r = integrateRoute(route, t, vs, field, { sweep: false }); return { t, s: r.totalSeconds, feasible: r.feasible, sweptAt: r.profile.sweptAt }; });
+}
+/** The nearest slack of the reference current to t (within ±hours): { t, minutes } with minutes signed (+ = t is after the slack). */
+export function slackNear(field, t, hours = 7) {
+  const step = 6 * 60000, sign = x => { const c = field.reference(x); return c.label === 'SLACK' ? 0 : c.label === 'EBB' ? -1 : 1; };
+  let best = null;
+  for (let off = 0; off <= hours * 60 * 60000; off += step) {
+    for (const d of off ? [-off, off] : [0]) {
+      const a = sign(t + d - step), b = sign(t + d);
+      if (a !== b) { best = { t: t + d - step / 2, minutes: Math.round((step / 2 - d) / 60000) }; break; }
+    }
+    if (best) break;
+  }
+  return best;
+}
+
 /** The coming hours in stepMin steps: the earliest feasible start and the fastest one. */
 export function scanWindows(route, t0Ms, vs, field, { hours = 48, stepMin = 30 } = {}) {
   let next = null, best = null;

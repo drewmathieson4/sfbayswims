@@ -9,7 +9,7 @@ import { sunTimes } from '../engine/sun.js';
 const H = 3600e3, SPAN = 48 * H, NS = 'http://www.w3.org/2000/svg';
 const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); parent.appendChild(e); return e; };
 
-export function createTimeline({ b }) {
+export function createTimeline({ b, settings }) {
   const svg = document.getElementById('tl'), box = document.getElementById('timeline'), live = b.live;
   let W = 600, Hh = 76, t0 = 0, dragging = false;
   const midnight = t => { const p = tzParts(t); return localToEpoch(p.y, p.mo, p.d, 0, 0); };
@@ -49,6 +49,13 @@ export function createTimeline({ b }) {
       const y = top + 2, h = 5;
       if (res.feasible) el('rect', { class: 'swim', x: x(at), y, width: Math.max(2, x(end) - x(at)), height: h }, svg);
       else { if (sw && sw > at) el('rect', { class: 'swim', x: x(at), y, width: Math.max(1, x(sw) - x(at)), height: h }, svg); el('rect', { class: 'swim swept', x: x(sw ?? at), y, width: Math.max(2, x(end) - x(sw ?? at)), height: h }, svg); }
+    }
+    // the tide height (dashed), scaled to the window's range
+    const ts = b.services.refs.tideRef?.();
+    if (settings?.tideLine && ts) {
+      const M = 96, hs = new Float32Array(M + 1); let lo = Infinity, hi = -Infinity;
+      for (let i = 0; i <= M; i++) { const h = ts.heightAt(t0 + (i / M) * SPAN); hs[i] = h ?? 0; if (h != null) { lo = Math.min(lo, h); hi = Math.max(hi, h); } }
+      if (hi > lo) { let d = ''; for (let i = 0; i <= M; i++) d += `${i ? 'L' : 'M'}${((i / M) * W).toFixed(1)} ${(bottom - ((hs[i] - lo) / (hi - lo)) * (bottom - top)).toFixed(1)}`; el('path', { class: 'height', d }, svg); }
     }
     // now, and the playhead (the selected start; the swimmer's moment during a preview)
     const nowX = x(state.now); if (nowX >= 0 && nowX <= W) el('line', { class: 'now', x1: nowX, x2: nowX, y1: top, y2: bottom }, svg);

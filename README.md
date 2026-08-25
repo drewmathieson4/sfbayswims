@@ -36,13 +36,19 @@ and the ground speed below which the swimmer is swept). The result card shows th
 48 h when a swim can't be made, and **▶ preview** — the swimmer plays the swim with the clock, streaks and current
 following them (the slider sets the speed). The top-right corner reads the water temperature, the current at the
 Opening (cove) or the Alcatraz station (Bay) with `≈` when a station runs on its bundled prediction, the wind, and the
-tide with the next high or low. The **timeline** shows the reference current for 48 hours (flood above the axis, ebb
-below), slack times, night, the swim as a bar (red where swept) and *now*. Hover (or tap on a phone) anywhere on the
+tide with the next high or low. A **daylight** row shows sunrise–sunset and flags a swim that starts before dawn or
+finishes after dusk. **Legs** (key `l`) breaks the swim down waypoint to waypoint — distance, time, pace, the current
+along (+ helps) and across — and the route on the map is coloured by ground speed (red where the swimmer crawls, green
+where the current helps; hover a row to highlight its leg). **Best starts** searches, on request, this swim or every
+swim over the next *n* tide cycles, or a chosen date: starts every 15 minutes ranked fastest first with the finish time,
+the slack relation and a daylight flag; filters for daylight, maximum duration and weekends; click one to plan it.
+**Saved plans** keep favourites in the browser. The **timeline** shows the reference current for 48 hours (flood above
+the axis, ebb below), the tide height (dashed), slack times, night, the swim as a bar (red where swept) and *now*. Hover (or tap on a phone) anywhere on the
 water for the current at that point and moment. *copy link* puts the whole plan in the URL; *settings · about* has
 units, the map layers, the keys, the data sources and what the numbers do and don't mean.
 
 **Keys:** `← →` start ±5 min (hold to accelerate; `⇧` for ±1 h) · `↑ ↓` swim · `r` the other way · `n` now · `space`
-preview / pause · `s` streaks · `c` current arrows · `- +` pace ±1 s · `v` next spot · `?` the settings sheet.
+preview / pause · `s` streaks · `c` current arrows · `l` legs · `- +` pace ±1 s · `v` next spot · `?` the settings sheet.
 
 **URL flags:** `?world=bay` · `?route=b2b_west` (a twin's id, e.g. `alcatraz~`, carries the direction) ·
 `?t=2026-09-01T14:00-07:00` · `?pace=0.87` (m/s) or `?pace=1:45` (per 100 m) · `?units=m&temp=C` · `?offline=1`

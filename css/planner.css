@@ -54,11 +54,32 @@ details .row { font-size: 0.9em; }
 .result .k { color: var(--mute); }
 .result .v { font-variant-numeric: tabular-nums; text-align: right; }
 .result .note { color: #ffb4a2; padding: 0.22em 0; }
+.result em.warn { color: #ffd27a; font-style: normal; }
 .result .note:empty, .result .win:empty { display: none; }
 .result .preview { margin-top: 0.7em; }
 .result .preview input { flex: 1; min-width: 6em; }
 .tools { display: flex; gap: 0.5em; }
 .tools button { flex: 1; }
+
+/* legs, best starts, saved plans */
+.result .notes { color: var(--mute); font-size: 0.9em; margin: -0.3em 0 0.5em; }
+.result .notes:empty { display: none; }
+#legs { width: 100%; border-collapse: collapse; font-size: 0.88em; font-variant-numeric: tabular-nums; }
+#legs th { text-align: left; color: var(--mute); font-weight: 400; padding: 0.2em 0.3em; border-bottom: 1px solid var(--line); }
+#legs td { padding: 0.25em 0.3em; border-bottom: 1px solid rgba(255, 255, 255, 0.06); white-space: nowrap; }
+#legs td:first-child { white-space: normal; }
+#legs tr.slow td { color: #ffd27a; } #legs tr.swept td { color: #ffb4a2; }
+#legs tr:hover td { background: rgba(255, 255, 255, 0.06); }
+.hint { color: var(--mute); font-size: 0.8em; margin-top: 0.4em; }
+details .row.filters { gap: 1em; font-size: 0.9em; } .filters label { display: flex; align-items: center; gap: 0.3em; }
+#bs-max { width: 4em; } #bs-cycles { width: 3.5em; } #bs-progress { flex: 1; height: 6px; }
+.list button.bs, .list button.fav { display: grid; grid-template-columns: 1fr auto; gap: 0 0.8em; text-align: left; }
+.list button.bs .rel, .list button.fav .d { grid-column: 1 / -1; color: var(--mute); font-size: 0.85em; }
+.list button.bs em { color: #ffd27a; font-style: normal; }
+.list button.fav .x { color: var(--mute); }
+#svg #speed line { stroke-width: 3px; vector-effect: non-scaling-stroke; opacity: 0.85; stroke-linecap: round; }
+#svg #speed.dim line { opacity: 0.25; } #svg #speed line.hi { opacity: 1; stroke-width: 6px; }
+#tl .height { fill: none; stroke: rgba(255, 255, 255, 0.55); stroke-width: 1; stroke-dasharray: 3 3; }
 
 /* the timeline strip */
 #timeline { position: absolute; z-index: 7; left: 0; right: 0; bottom: 0; height: var(--tl-h); background: rgba(8, 8, 8, 0.96); border-top: 1px solid var(--line); touch-action: none; cursor: ew-resize; }
