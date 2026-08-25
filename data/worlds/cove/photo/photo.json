@@ -1,0 +1,23 @@
+{
+ "note": "Hand-written: the cove ships its aerial untouched, so the app reads source.jpg directly (no stylize step).",
+ "bbox": {
+  "s": 37.803,
+  "w": -122.436,
+  "n": 37.8155,
+  "e": -122.411
+ },
+ "width": 4991,
+ "height": 3159,
+ "resM": 0.44,
+ "source": "NOAA NGS 2025 orthoimagery, San Francisco (Digital Coast 10318), public domain",
+ "default": "aerial",
+ "variants": [
+  {
+   "id": "aerial",
+   "file": "source.jpg",
+   "tone": "dark",
+   "recipe": "raw aerial, untouched",
+   "color": true
+  }
+ ]
+}

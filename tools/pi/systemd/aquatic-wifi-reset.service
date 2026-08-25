@@ -1,0 +1,11 @@
+[Unit]
+Description=Aquatic Park: 'w' held 3 s on the button board forgets Wi-Fi (the setup hotspot returns)
+After=NetworkManager.service
+
+[Service]
+ExecStart=/usr/bin/python3 @APP@/tools/pi/wifi_reset.py
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

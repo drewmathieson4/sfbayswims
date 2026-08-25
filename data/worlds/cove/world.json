@@ -1,0 +1,30 @@
+{
+ "id": "cove",
+ "subtitle": "",
+ "bbox": {
+  "s": 37.803,
+  "w": -122.436,
+  "n": 37.8155,
+  "e": -122.411
+ },
+ "photo": {
+  "dir": "photo"
+ },
+ "geometry": {
+  "type": "zones",
+  "shoreline": "shoreline.geojson",
+  "zones": "zones.json"
+ },
+ "field": {
+  "type": "cove"
+ },
+ "bundles": {
+  "currents": "data/currents-{year}.json"
+ },
+ "landmarks": "landmarks.json",
+ "routes": "routes.json",
+ "ui": {
+  "windowScan": "off"
+ },
+ "config": {}
+}

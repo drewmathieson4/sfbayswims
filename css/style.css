@@ -1,0 +1,64 @@
+/* One palette: white ink on black — the photos are dark-toned, and a dark ground avoids a white flash on reload. */
+:root {
+  --bg: #000000;
+  --ink: #ffffff;
+  --mute: #9a9a9a;
+  --panel: rgba(0, 0, 0, 0.55);
+  --current: rgba(255, 255, 255, 0.2);   /* streak colour (read by js/particles.js) */
+  --photo-filter: none;                  /* set from js/config.js photo.filter at boot */
+  --route-done-w: 1px;                   /* route.doneWidth */
+  --swimmer-r: 5;                        /* route.dotR */
+  --ui-scale: 1;                         /* uiScale */
+  --font: "Helvetica Neue", Helvetica, Inter, Arial, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: calc(11px * var(--ui-scale)); overflow: hidden; -webkit-font-smoothing: antialiased; }
+#map { position: absolute; inset: 0; background: var(--bg); }
+#map > canvas, #map > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+#photo { z-index: 0; filter: var(--photo-filter); }
+#particles { z-index: 1; }
+#svg { z-index: 2; }
+#debugcanvas { z-index: 3; pointer-events: none; }   /* created by js/app.js only when the debug overlay is on */
+#svg path, #svg circle { vector-effect: non-scaling-stroke; }
+
+/* swimmer: the swum path, the icon, its stroking arms, the comet tail and the breadcrumbs */
+#svg .route-done { fill: none; stroke: var(--ink); stroke-width: var(--route-done-w); stroke-linecap: round; stroke-linejoin: round; }
+#svg .icon .dot { fill: var(--ink); stroke: var(--bg); stroke-width: 1px; }
+#svg .icon .body, #svg .icon .head { fill: var(--ink); stroke: var(--bg); stroke-width: 0.6px; }
+#svg .icon .arm { fill: none; stroke: var(--ink); stroke-width: var(--arm-w, 1px); stroke-linecap: round; }
+#svg .tail path { fill: none; stroke: var(--ink); stroke-linecap: round; stroke-linejoin: round; }
+#svg .crumbs circle { fill: var(--ink); opacity: 0.7; }
+
+/* HUD (top corners) */
+.hud { position: absolute; z-index: 5; pointer-events: none; letter-spacing: 0.16em; text-transform: uppercase; background: var(--panel); padding: 0.9em 1.2em; }
+.hud.tl { top: 16px; left: 16px; }
+.hud.tr { top: 16px; right: 16px; text-align: right; }
+.hud .title, .hud .big { font-size: 1.35em; font-weight: 600; }
+.hud .big + .big { margin-top: 0.3em; }
+.hud .sub { font-size: 1em; color: var(--mute); margin-top: 0.5em; }
+.hud .sub:empty, .hud .big:empty { display: none; }
+.hud .approx { color: var(--mute); }
+
+/* rail (bottom left): route · distance · total · elapsed · note · best/next */
+#rail { position: absolute; z-index: 5; left: 16px; bottom: 16px; min-width: 200px; letter-spacing: 0.14em; text-transform: uppercase; background: var(--panel); padding: 1em 1.2em; }
+#rail .route-name { font-size: 2em; font-weight: 600; letter-spacing: 0.08em; margin-bottom: 0.4em; }
+#rail .row { display: flex; justify-content: space-between; gap: 2em; padding: 0.25em 0; }
+#rail .row:first-of-type { border-top: 1px solid var(--ink); padding-top: 0.6em; }
+#rail .k { color: var(--mute); }
+#rail .note { color: var(--mute); padding: 0.25em 0; }
+#rail .note:empty, #rail .win:empty { display: none; }
+#rail .v { font-variant-numeric: tabular-nums; }
+
+/* switches (keys a / s / u / p) and kiosk */
+html.no-ui .hud, html.no-ui #rail { display: none; }
+html.no-swimmer #svg #route, html.no-swimmer #svg #swimmer { display: none; }
+html.no-streaks #particles { display: none; }
+html.kiosk { user-select: none; -webkit-user-select: none; }
+html.kiosk.idle { cursor: none; }
+@media (max-width: 720px) { #rail { left: 12px; bottom: 12px; min-width: 150px; } .hud.tl { left: 12px; } .hud.tr { right: 12px; } }
+
+/* kiosk ambient dimming (js/ambient.js): everything, HUD included, dims like a print in a dark room */
+#dim, #warm { position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.4s linear; }
+#dim { background: #000; z-index: 50; }
+#warm { background: #ff9a3c; mix-blend-mode: multiply; z-index: 51; }

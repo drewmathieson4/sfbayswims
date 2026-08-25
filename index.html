@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aquatic Park</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main id="map">
+  <svg id="photo" xmlns="http://www.w3.org/2000/svg"><image id="photo-img" preserveAspectRatio="none"/></svg>
+  <canvas id="particles"></canvas>
+  <svg id="svg" xmlns="http://www.w3.org/2000/svg"></svg>
+</main>
+<header class="hud tl">
+  <div class="title">Aquatic Park</div>
+  <div class="sub" id="world-name"></div>
+  <div class="sub" id="clock">…</div>
+  <div class="sub" id="hint"></div>
+</header>
+<div class="hud tr">
+  <div class="big" id="water">water …</div>
+  <div class="big" id="current"></div>
+  <div class="sub" id="wind"></div>
+</div>
+<div id="dim"></div><div id="warm"></div>
+<aside id="rail">
+  <div class="route-name" id="route-name">…</div>
+  <div class="row"><span class="k">distance</span><span class="v" id="route-dist">…</span></div>
+  <div class="row"><span class="k">total</span><span class="v" id="route-total">…</span></div>
+  <div class="row"><span class="k">elapsed</span><span class="v" id="elapsed">0:00</span></div>
+  <div class="note" id="route-note"></div>
+  <div class="row win" id="route-best"></div>
+  <div class="row win" id="route-next"></div>
+</aside>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

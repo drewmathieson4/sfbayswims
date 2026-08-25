@@ -1,0 +1,11 @@
+{
+ "default": "cove",
+ "worlds": [
+  {
+   "id": "cove"
+  },
+  {
+   "id": "bay"
+  }
+ ]
+}

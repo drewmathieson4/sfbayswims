@@ -1,0 +1,73 @@
+{
+  "note": "waypoints: landmark ids, inline {lat,lon}, or {follow: muni|breakwater|hyde, via: <landmark>, dir: cw|ccw} steps that hug a structure between the neighbouring points (15 m off). When the points before and after a follow step are the same, the whole structure is circled in `dir`. loop:true closes the route; loop:false makes an out-and-back.",
+  "routes": [
+    {
+      "id": "flag",
+      "name": "Flag",
+      "loop": false,
+      "waypoints": [
+        "start",
+        "gate",
+        "flag"
+      ]
+    },
+    {
+      "id": "repair",
+      "name": "Repair",
+      "loop": false,
+      "waypoints": [
+        "start",
+        "gate",
+        "repair"
+      ]
+    },
+    {
+      "id": "cw",
+      "name": "Clockwise",
+      "loop": true,
+      "waypoints": [
+        "start",
+        "gate",
+        "flag",
+        "goalposts",
+        {
+          "follow": "muni",
+          "via": "repair"
+        },
+        "jacuzzi",
+        "gate"
+      ]
+    },
+    {
+      "id": "ccw",
+      "name": "Counterclockwise",
+      "loop": true,
+      "waypoints": [
+        "start",
+        "gate",
+        "jacuzzi",
+        {
+          "follow": "muni",
+          "via": "repair"
+        },
+        "goalposts",
+        "flag",
+        "gate"
+      ]
+    },
+    {
+      "id": "breakwater",
+      "name": "Breakwater",
+      "loop": true,
+      "waypoints": [
+        "start",
+        "gate",
+        {
+          "follow": "breakwater",
+          "dir": "ccw"
+        },
+        "gate"
+      ]
+    }
+  ]
+}

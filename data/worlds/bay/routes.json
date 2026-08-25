@@ -1,0 +1,117 @@
+{
+ "note": "Bay swims: straight legs between points (no pier-following); oneWay = point-to-point. Aquatic Park finishes go off_opening \u2192 opening \u2192 gate \u2192 start (Alcatraz comes straight down from the north). Bridge to Bridge is swum both ways: Golden Gate \u2192 Bay Bridge on the flood, Bay Bridge \u2192 Golden Gate on the ebb (same line, reversed).",
+ "routes": [
+  {
+   "id": "alcatraz",
+   "name": "Alcatraz",
+   "oneWay": true,
+   "waypoints": [
+    "alcatraz",
+    "opening",
+    "cove_mid",
+    "gate",
+    "start"
+   ]
+  },
+  {
+   "id": "escape",
+   "name": "Escape from Alcatraz",
+   "oneWay": true,
+   "waypoints": [
+    "alcatraz",
+    "marina_green"
+   ]
+  },
+  {
+   "id": "gate",
+   "name": "Golden Gate",
+   "oneWay": true,
+   "waypoints": [
+    "lime_point",
+    "ggb_south",
+    "fort_point"
+   ]
+  },
+  {
+   "id": "gate_ap",
+   "name": "Golden Gate to Aquatic Park",
+   "oneWay": true,
+   "waypoints": [
+    "fort_point",
+    "off_marina",
+    "off_fort_mason",
+    "off_opening",
+    "opening",
+    "cove_mid",
+    "gate",
+    "start"
+   ]
+  },
+  {
+   "id": "b2b",
+   "name": "Golden Gate to Bay Bridge",
+   "oneWay": true,
+   "waypoints": [
+    "ggb_south",
+    "off_marina",
+    "off_fort_mason",
+    "alcatraz_s",
+    "off_pier39",
+    "off_pier23",
+    "bay_bridge"
+   ]
+  },
+  {
+   "id": "b2b_west",
+   "name": "Bay Bridge to Golden Gate",
+   "oneWay": true,
+   "waypoints": [
+    "bay_bridge",
+    "off_pier23",
+    "off_pier39",
+    "alcatraz_s",
+    "off_fort_mason",
+    "off_marina",
+    "ggb_south"
+   ]
+  },
+  {
+   "id": "angel_round",
+   "name": "Round Angel Island",
+   "waypoints": [
+    "angel_00",
+    "angel_01",
+    "angel_02",
+    "angel_03",
+    "angel_04",
+    "angel_05",
+    "angel_06",
+    "angel_07",
+    "angel_08",
+    "angel_09",
+    "angel_10",
+    "angel_11",
+    "angel_12",
+    "angel_13",
+    "angel_14",
+    "angel_15",
+    "angel_00"
+   ],
+   "loop": true
+  },
+  {
+   "id": "angel_ap",
+   "name": "Angel Island to Aquatic Park",
+   "oneWay": true,
+   "waypoints": [
+    "angel_09",
+    "alcatraz_e",
+    "off_opening",
+    "opening",
+    "cove_mid",
+    "gate",
+    "start"
+   ]
+  }
+ ]
+}

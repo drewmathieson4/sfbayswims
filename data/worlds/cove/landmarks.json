@@ -1,0 +1,91 @@
+{
+  "note": "Routing points only (never drawn). 'start' is the club beach between the two docks; 'gate' sits between the dock ends and every route passes it on the way out and back. Positions fitted to the 2025 aerial / OSM (~10 m). Nudge lat/lon freely.",
+  "landmarks": [
+    {
+      "id": "start",
+      "num": 1,
+      "name": "Dolphin Club beach (between the docks)",
+      "lat": 37.80823,
+      "lon": -122.42149
+    },
+    {
+      "id": "gate",
+      "name": "Between the dock ends",
+      "lat": 37.80855,
+      "lon": -122.42169
+    },
+    {
+      "id": "flag",
+      "num": 2,
+      "name": "Flag",
+      "lat": 37.80714,
+      "lon": -122.42505
+    },
+    {
+      "id": "goalposts",
+      "num": 3,
+      "name": "Goal Posts",
+      "lat": 37.80836,
+      "lon": -122.42639
+    },
+    {
+      "id": "repair",
+      "num": 4,
+      "name": "Repair",
+      "lat": 37.81,
+      "lon": -122.42604
+    },
+    {
+      "id": "roundhouse",
+      "num": 5,
+      "name": "Roundhouse",
+      "lat": 37.8103,
+      "lon": -122.42458
+    },
+    {
+      "id": "opening",
+      "num": 6,
+      "name": "Opening",
+      "lat": 37.81049,
+      "lon": -122.42399
+    },
+    {
+      "id": "jacuzzi",
+      "num": 7,
+      "name": "Jacuzzi",
+      "lat": 37.80989,
+      "lon": -122.42353
+    },
+    {
+      "id": "badbecky",
+      "num": 8,
+      "name": "Bad Becky",
+      "lat": 37.81034,
+      "lon": -122.4231
+    },
+    {
+      "id": "harbor_e",
+      "name": "Harbor",
+      "lat": 37.81138,
+      "lon": -122.42122
+    },
+    {
+      "id": "harbor_mouth",
+      "name": "Harbor mouth",
+      "lat": 37.81176,
+      "lon": -122.41957
+    },
+    {
+      "id": "outside_mid",
+      "name": "Outside",
+      "lat": 37.81201,
+      "lon": -122.42179
+    },
+    {
+      "id": "outside_opening",
+      "name": "Outside opening",
+      "lat": 37.81106,
+      "lon": -122.42399
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+ "world": "bay",
+ "date": "2025-05-10",
+ "items": [
+  "S2A_10SEG_20250510_0_L2A",
+  "S2A_10SEH_20250510_0_L2A"
+ ],
+ "bbox": {
+  "s": 37.785,
+  "w": -122.55,
+  "n": 37.885,
+  "e": -122.32
+ },
+ "width": 2020,
+ "height": 1112,
+ "resM": 10.0,
+ "file": "water-2025-05-10.jpg",
+ "source": "Copernicus Sentinel-2 L2A (ESA), 2025-05-10",
+ "fetchedAt": "2026-08-24T21:03:13"
+}

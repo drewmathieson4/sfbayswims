@@ -1,0 +1,14 @@
+{
+ "bbox": {
+  "s": 37.785,
+  "w": -122.55,
+  "n": 37.885,
+  "e": -122.32
+ },
+ "width": 2020,
+ "height": 1112,
+ "resM": 10.0,
+ "source": "OSM coastline (32 polygons) + piers",
+ "waterFraction": 0.689,
+ "generated": "2026-08-24T20:37:20"
+}

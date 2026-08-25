@@ -1,0 +1,2 @@
+# Aquatic Park frame: every December morning, fetch next year's tide and current bundles if they don't exist yet
+0 3 * 12 * @USER@ /bin/bash @APP@/tools/pi/refresh-bundles.sh >> /tmp/aquatic-bundles.log 2>&1

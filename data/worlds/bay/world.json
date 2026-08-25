@@ -1,0 +1,68 @@
+{
+ "id": "bay",
+ "subtitle": "San Francisco Bay",
+ "bbox": {
+  "s": 37.785,
+  "w": -122.55,
+  "n": 37.885,
+  "e": -122.32
+ },
+ "photo": {
+  "dir": "photo"
+ },
+ "geometry": {
+  "type": "mask",
+  "file": "mask.png",
+  "meta": "mask.json"
+ },
+ "field": {
+  "type": "stations",
+  "stations": "stations.json",
+  "reference": "SFB1204",
+  "referenceLabel": "alcatraz",
+  "idw": {
+   "k": 5,
+   "power": 2,
+   "cellM": 40
+  }
+ },
+ "bundles": {
+  "currents": "data/worlds/bay/currents-{year}.json"
+ },
+ "landmarks": "landmarks.json",
+ "routes": "routes.json",
+ "ui": {
+  "windowScan": "infeasible"
+ },
+ "config": {
+  "origin": {
+   "lat": 37.835,
+   "lon": -122.435
+  },
+  "view": {
+   "core": null,
+   "routePadM": 500
+  },
+  "anim": {
+   "speedup": 60
+  },
+  "trace": {
+   "crumbEveryS": 90,
+   "tailS": 240
+  },
+  "particles": {
+   "perCells": 400,
+   "min": 800,
+   "max": 1600,
+   "speedup": 400,
+   "maxAgeS": [
+    2,
+    6
+   ]
+  },
+  "route": {
+   "dotR": 60,
+   "keepRightM": 0
+  }
+ }
+}

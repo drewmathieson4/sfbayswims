@@ -1,0 +1,15 @@
+[Unit]
+Description=Aquatic Park ambient light sensor → /run/aquatic/ambient.json
+After=multi-user.target
+
+[Service]
+User=@USER@
+RuntimeDirectory=aquatic
+RuntimeDirectoryMode=0755
+RuntimeDirectoryPreserve=yes
+ExecStart=/usr/bin/python3 @APP@/tools/pi/ambient.py --out /run/aquatic/ambient.json
+Restart=on-failure
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target

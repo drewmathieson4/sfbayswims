@@ -1,0 +1,16 @@
+{
+ "world": "bay",
+ "bbox": {
+  "s": 37.785,
+  "w": -122.55,
+  "n": 37.885,
+  "e": -122.32
+ },
+ "width": 6733,
+ "height": 3707,
+ "resM": 3.0,
+ "fetchedAt": "2026-08-24T17:35:10",
+ "source": "USGS NAIPPlus (USDA NAIP 2022, 0.6 m, flown 2022-05-18), public domain",
+ "nativeResM": 0.6,
+ "tiles": "2\u00d71"
+}

@@ -1,0 +1,209 @@
+{
+ "note": "Bay-swim routing points (never drawn). Structures from OSM, approach points a few hundred metres off so straight legs stay in water. angel_00..15: Round Angel Island ring = convex hull of the island's mask component offset 150 m, clockwise from Ayala Cove (tools/angel_ring in the session notes).",
+ "landmarks": [
+  {
+   "id": "start",
+   "name": "Dolphin Club beach",
+   "lat": 37.8083,
+   "lon": -122.42144
+  },
+  {
+   "id": "gate",
+   "name": "Between the club docks",
+   "lat": 37.80854,
+   "lon": -122.42166
+  },
+  {
+   "id": "opening",
+   "name": "The Opening",
+   "lat": 37.81049,
+   "lon": -122.42399
+  },
+  {
+   "id": "cove_mid",
+   "name": "Inside the opening (clear of the breakwater tip)",
+   "lat": 37.8095,
+   "lon": -122.424
+  },
+  {
+   "id": "alcatraz",
+   "name": "Alcatraz, south side",
+   "lat": 37.8243,
+   "lon": -122.4233
+  },
+  {
+   "id": "alcatraz_e",
+   "name": "East of Alcatraz",
+   "lat": 37.827,
+   "lon": -122.416
+  },
+  {
+   "id": "marina_green",
+   "name": "Marina Green beach (bay side, west of St Francis YC)",
+   "lat": 37.80752,
+   "lon": -122.4445
+  },
+  {
+   "id": "fort_point",
+   "name": "Fort Point beach",
+   "lat": 37.8103,
+   "lon": -122.476
+  },
+  {
+   "id": "ggb_south",
+   "name": "Golden Gate Bridge, south tower",
+   "lat": 37.814,
+   "lon": -122.4765
+  },
+  {
+   "id": "ggb_mid",
+   "name": "Golden Gate Bridge, mid-span",
+   "lat": 37.8199,
+   "lon": -122.4775
+  },
+  {
+   "id": "lime_point",
+   "name": "Lime Point (north tower)",
+   "lat": 37.8248,
+   "lon": -122.4777
+  },
+  {
+   "id": "off_marina",
+   "name": "Off the Marina",
+   "lat": 37.812,
+   "lon": -122.445
+  },
+  {
+   "id": "off_fort_mason",
+   "name": "Off Fort Mason",
+   "lat": 37.8125,
+   "lon": -122.436
+  },
+  {
+   "id": "alcatraz_s",
+   "name": "South of Alcatraz",
+   "lat": 37.817,
+   "lon": -122.415
+  },
+  {
+   "id": "off_pier39",
+   "name": "Off Pier 39",
+   "lat": 37.8125,
+   "lon": -122.405
+  },
+  {
+   "id": "off_pier23",
+   "name": "Off Pier 23",
+   "lat": 37.807,
+   "lon": -122.396
+  },
+  {
+   "id": "bay_bridge",
+   "name": "Bay Bridge, west tower (Alpha)",
+   "lat": 37.792,
+   "lon": -122.387
+  },
+  {
+   "id": "off_opening",
+   "name": "Off the Opening (approach)",
+   "lat": 37.8127,
+   "lon": -122.424
+  },
+  {
+   "id": "angel_00",
+   "name": "Angel Island ring 0",
+   "lat": 37.86953,
+   "lon": -122.43992
+  },
+  {
+   "id": "angel_01",
+   "name": "Angel Island ring 1",
+   "lat": 37.8735,
+   "lon": -122.43112
+  },
+  {
+   "id": "angel_02",
+   "name": "Angel Island ring 2",
+   "lat": 37.87353,
+   "lon": -122.43022
+  },
+  {
+   "id": "angel_03",
+   "name": "Angel Island ring 3",
+   "lat": 37.87339,
+   "lon": -122.42934
+  },
+  {
+   "id": "angel_04",
+   "name": "Angel Island ring 4",
+   "lat": 37.87161,
+   "lon": -122.42365
+  },
+  {
+   "id": "angel_05",
+   "name": "Angel Island ring 5",
+   "lat": 37.87018,
+   "lon": -122.42182
+  },
+  {
+   "id": "angel_06",
+   "name": "Angel Island ring 6",
+   "lat": 37.8624,
+   "lon": -122.4171
+  },
+  {
+   "id": "angel_07",
+   "name": "Angel Island ring 7",
+   "lat": 37.85269,
+   "lon": -122.41664
+  },
+  {
+   "id": "angel_08",
+   "name": "Angel Island ring 8",
+   "lat": 37.85141,
+   "lon": -122.41752
+  },
+  {
+   "id": "angel_09",
+   "name": "Angel Island ring 9",
+   "lat": 37.85105,
+   "lon": -122.41968
+  },
+  {
+   "id": "angel_10",
+   "name": "Angel Island ring 10",
+   "lat": 37.85224,
+   "lon": -122.43515
+  },
+  {
+   "id": "angel_11",
+   "name": "Angel Island ring 11",
+   "lat": 37.85389,
+   "lon": -122.44161
+  },
+  {
+   "id": "angel_12",
+   "name": "Angel Island ring 12",
+   "lat": 37.85495,
+   "lon": -122.44365
+  },
+  {
+   "id": "angel_13",
+   "name": "Angel Island ring 13",
+   "lat": 37.85535,
+   "lon": -122.44415
+  },
+  {
+   "id": "angel_14",
+   "name": "Angel Island ring 14",
+   "lat": 37.86072,
+   "lon": -122.44811
+  },
+  {
+   "id": "angel_15",
+   "name": "Angel Island ring 15",
+   "lat": 37.86167,
+   "lon": -122.44805
+  }
+ ]
+}

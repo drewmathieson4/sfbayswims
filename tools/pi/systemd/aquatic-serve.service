@@ -1,0 +1,13 @@
+[Unit]
+Description=Aquatic Park static server (127.0.0.1:8000)
+After=network.target
+
+[Service]
+User=@USER@
+WorkingDirectory=@APP@
+ExecStart=/usr/bin/python3 @APP@/tools/serve.py 8000
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
