@@ -69,6 +69,9 @@ stays on for debugging). `lsusb` on the Pi lists it as a keyboard.
 
 - Route **stays put**; after 10 min without a button press while time-travelling it drifts back
   to *current* (`kiosk.returnToNowS`). Display never blanks (wake lock + OS settings).
+- The swimmer waits at the start until a swim is started (`space` / the rail's ▶ start) and the streaks show
+  *now* meanwhile. No Pico gesture starts a swim yet — map ● tap to `space` in `tools/pi/pico/code.py` if the
+  frame should play them.
 - Live data refreshes on the app's own schedule; with no network it keeps animating from the
   bundled year (tides, currents for both views, water-temperature climatology shown with `≈`).
 - The nightly reload (`kiosk.reloadAt`, 04:00) picks up any app update copied to

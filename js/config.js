@@ -50,7 +50,7 @@ export const CONFIG = {
   particles: { perCells: 20, min: 500, max: 1600, speedup: 50, fade: 0.04, lineWidth: 1, maxAgeS: [1.5, 4] },
 
   anim: {
-    speedup: 10, pauseS: 1.0,                           // swim-time seconds per real second (keys [ ] scale it live); pause at the end of a lap
+    speedup: 20, pauseS: 1.0,                           // swim-time seconds per real second (keys [ ] scale it live); pause at the end of a swim
     maxFps: 0,                                          // 0 = uncapped; ?fps=30 on the frame
     // swept away: the drift lasts sweptRealS real seconds with the clock at sweptTempo× the usual tempo; full opacity
     // until sweptFadeFrom of the way through, then fades. sweptFightS: after the sprint reserve is spent, seconds of

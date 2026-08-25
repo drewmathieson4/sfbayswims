@@ -1,6 +1,6 @@
-// HUD (top corners), rail (route · distance · total · elapsed · note · best/next), keys, gestures and kiosk behaviour.
+// HUD (top corners), rail (route · distance · total · elapsed · speed · note · best/next · ▶ start), keys, gestures and kiosk behaviour.
 import { CONFIG } from './config.js';
-import { state, set, on, effectiveTime } from './state.js';
+import { state, set, on, effectiveTime, displayTime } from './state.js';
 import { fmtTime, fmtDate } from './data.js';
 
 const $ = id => document.getElementById(id);
@@ -17,9 +17,15 @@ const fmtWhen = t => `${fmtDate(t).replace(/,.*$/, '')} ${fmtTime(t)}`;
 
 export function createHud({ live }) {
   const clock = $('clock'), water = $('water'), current = $('current'), wind = $('wind');
-  const rName = $('route-name'), rTotal = $('route-total'), rDist = $('route-dist'), elapsed = $('elapsed'), elapsedK = $('elapsed-k'), speed = $('speed'), note = $('route-note'), best = $('route-best'), next = $('route-next');
+  const rName = $('route-name'), rTotal = $('route-total'), rDist = $('route-dist'), elapsed = $('elapsed'), elapsedK = $('elapsed-k'), speed = $('speed'), note = $('route-note'), best = $('route-best'), next = $('route-next'), startBtn = $('start');
   const scrubbed = () => state.selectedTime != null;
-  const renderClock = () => { clock.textContent = scrubbed() ? `${fmtDate(effectiveTime())} · ${fmtTime(effectiveTime())}` : 'current'; };
+  const swimT = () => state.swimming ? state.swimAt ?? state.physics?.at ?? null : null;   // the swimmer's moment while a swim plays
+  const renderClock = () => {
+    const t = swimT();
+    if (t != null) { const day = scrubbed() || fmtDate(t) !== fmtDate(state.now) ? `${fmtDate(t)} · ` : ''; clock.textContent = `swimming · ${day}${fmtTime(t)}`; }
+    else clock.textContent = scrubbed() ? `${fmtDate(effectiveTime())} · ${fmtTime(effectiveTime())}` : 'current';
+  };
+  const renderStart = () => { startBtn.textContent = !state.swimming ? '▶ start' : state.paused ? '▶ resume' : '❚❚ pause'; };
   function renderWater() {
     const w = state.data.waterTemp;
     if (!w || (scrubbed() && CONFIG.hud.scrubbedWater === 'hide')) { water.textContent = w ? '' : 'water …'; return; }
@@ -32,7 +38,7 @@ export function createHud({ live }) {
   }
   function renderCurrent() {
     if (!live.field) { current.textContent = ''; return; }
-    const o = live.field.reference(effectiveTime()), where = o.where ? ` <span class="approx">· ${o.where}</span>` : '';
+    const o = live.field.reference(displayTime()), where = o.where ? ` <span class="approx">· ${o.where}</span>` : '';
     current.innerHTML = o.label === 'SLACK' ? `slack${where}` : `${o.label.toLowerCase()} ${o.approx ? '≈' : ''}${o.kn.toFixed(1)} kn${where}`;
   }
   function renderRoute() {
@@ -49,12 +55,14 @@ export function createHud({ live }) {
     best.innerHTML = w.best ? `<span class="k">best 48 h</span><span class="v">${fmtWhen(w.best.t)} · ${fmtMMSS(w.best.s)}</span>` : '';
     next.innerHTML = w.next ? `<span class="k">next</span><span class="v">${fmtWhen(w.next.t)}</span>` : '';
   }
-  on('now', () => { if (!scrubbed()) { renderClock(); renderCurrent(); } });
+  on('now', () => { if (!scrubbed() || state.swimming) { renderClock(); renderCurrent(); } });
+  on('swimming', () => { renderClock(); renderCurrent(); renderStart(); }); on('paused', renderStart);
+  startBtn.addEventListener('click', () => { noteInput(); startStop(); startBtn.blur(); });
   on('selectedTime', () => { renderClock(); renderCurrent(); renderWater(); renderWind(); });
   on('data', () => { renderWater(); renderWind(); renderCurrent(); });
   on('routeId', renderRoute); on('physics', renderRoute); on('paceMps', renderRoute); on('windows', renderWindows);
   on('world', () => { renderRoute(); renderCurrent(); });
-  renderClock(); renderWater(); renderWind(); renderCurrent(); renderRoute();
+  renderClock(); renderWater(); renderWind(); renderCurrent(); renderRoute(); renderStart();
   return {
     setElapsed: (s, tempo) => { elapsed.textContent = fmtMMSS(s); elapsedK.textContent = tempo && Math.abs(tempo - CONFIG.anim.speedup) > 1e-9 ? `elapsed · ${+tempo.toFixed(1)}×` : 'elapsed'; },
     setSpeed: mps => { speed.textContent = mps > 0.01 ? `${fmtMMSS(Math.round(YD100 / mps))} /100 yd` : '—'; },   // whole seconds only
@@ -67,6 +75,12 @@ export function applyShow() {
   html.classList.toggle('no-ui', !s.ui); html.classList.toggle('no-swimmer', !s.swimmer); html.classList.toggle('no-streaks', !s.streaks);
 }
 export function toggleShow(k) { set({ show: { ...state.show, [k]: !state.show[k] } }); applyShow(); }
+/** ▶ start / space: start the swim, then pause and resume it (a hidden swimmer is shown first). */
+export function startStop() {
+  if (state.swimming) { set({ paused: !state.paused }); return; }
+  if (!state.show.swimmer) toggleShow('swimmer');
+  set({ swimming: true, paused: false });
+}
 
 // last input from a person (keys or pointer) — the kiosk's idle drift and cursor hiding both read it
 let lastInputAt = performance.now();
@@ -103,8 +117,8 @@ export function bindControls({ live, mapEl, onSwitchWorld }) {
       case 'ArrowRight': if (!e.repeat) startHold(1); e.preventDefault(); break;
       case 'ArrowLeft': if (!e.repeat) startHold(-1); e.preventDefault(); break;
       case 'ArrowUp': case 'ArrowDown': cycle(e.key === 'ArrowUp' ? -1 : 1); e.preventDefault(); break;
-      case ' ': set({ paused: !state.paused }); e.preventDefault(); break;
-      case 'n': case 'N': case 'Escape': case 'Enter': endHold(); set({ selectedTime: null }); break;
+      case ' ': startStop(); e.preventDefault(); break;
+      case 'n': case 'N': case 'Escape': case 'Enter': endHold(); set({ swimming: false, paused: false, selectedTime: null }); break;   // stops the swim, back to current
       case 'a': case 'A': toggleShow('swimmer'); break;
       case 's': case 'S': toggleShow('streaks'); break;
       case 'u': case 'U': toggleShow('ui'); break;

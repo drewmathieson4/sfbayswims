@@ -14,6 +14,8 @@ export const state = {
   show: { swimmer: true, streaks: true, ui: true },
   icon: null,              // runtime override of swimmer.icon (key i): 'glyph' | 'beacon'
   tempo: 1,                // runtime multiplier on anim.speedup (keys [ ])
+  swimming: false,         // a swim is playing (▶ start / space): the clock and the streaks follow the swimmer
+  swimAt: null,            // ms — the swimmer's moment while a swim plays (its start + elapsed swim seconds); null at rest
   kiosk: false,
   still: false,            // ?still=1 → zero current (physics sanity)
   view: null,              // the fitted view (metres ↔ pixels), set by main.js on resize
@@ -34,4 +36,5 @@ export function on(key, fn) {
 }
 export function effectiveTime() { return state.selectedTime ?? state.now; }
 export function physicsTime() { return Math.floor(effectiveTime() / 60000) * 60000; }   // physics is recomputed per minute
+export function displayTime() { return state.swimAt ?? effectiveTime(); }              // what the picture shows: the swimmer's moment while swimming, else the selected one
 export function bumpData(patch) { set({ data: { ...state.data, ...patch, version: state.data.version + 1 } }); }

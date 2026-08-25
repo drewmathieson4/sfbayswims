@@ -1,7 +1,7 @@
 // The running app: live-data refresh loops, the physics recompute, the animation loop, per-world mount/unmount,
 // and the debug overlay. main.js boots it once; worlds are mounted into it.
 import { CONFIG } from './config.js';
-import { state, set, on, bumpData, effectiveTime, physicsTime } from './state.js';
+import { state, set, on, bumpData, displayTime, physicsTime } from './state.js';
 import * as data from './data.js';
 import { TideSeries } from './tide.js';
 import { createHud, bindControls, kioskMode } from './ui.js';
@@ -81,7 +81,7 @@ export async function start({ canvas, mapEl, params, onResize, live, nextWorld }
   }
   function unmount() {
     clearTimeout(recomputeTimer); recomputeTimer = null; clearTimeout(scanTimer); scanTimer = null;
-    particles?.clear(); world?.photo.dispose(); particles = null; swimmer = null; world = null; set({ windows: null });
+    particles?.clear(); world?.photo.dispose(); particles = null; swimmer = null; world = null; set({ windows: null, swimming: false, paused: false });
   }
 
   // ---- physics: every route is re-integrated when the time, pace, route or data change (debounced 120 ms) ----
@@ -90,11 +90,21 @@ export async function start({ canvas, mapEl, params, onResize, live, nextWorld }
   const recomputeSafe = () => { try { recompute(); } catch (e) { console.error('recompute:', e.message, e.stack); } };
   on('selectedTime', markDirty); on('paceMps', markDirty); on('data', markDirty); on('routeId', markDirty);
   on('icon', () => swimmer?.rebuild());
-  on('now', () => { if (state.selectedTime == null) { const m = Math.floor(state.now / 60000); if (m !== lastMinute) { lastMinute = m; markDirty(); } } });
+  const minuteTick = () => { if (state.selectedTime != null || state.swimming) return; const m = Math.floor(state.now / 60000); if (m !== lastMinute) { lastMinute = m; markDirty(); } };
+  on('now', minuteTick);
+  // ---- the swim: one lap per ▶ start (state.swimming). While it plays the picture follows the swimmer's moment (state.swimAt):
+  // the streaks, the HUD current and the clock read displayTime(); the swim keeps its start minute until it ends.
+  on('swimming', v => {
+    if (v) { if (dirty) recomputeSafe(); state.swimAt = state.physics?.at ?? null; }
+    else { swimmer?.reset(); state.swimAt = null; minuteTick(); }             // catch up on the minutes that passed meanwhile
+  });
+  const stopSwim = () => set({ swimming: false, paused: false });
+  for (const k of ['routeId', 'selectedTime', 'paceMps', 'world']) on(k, stopSwim);   // whatever changes what is being swum stops the swim
+  on('show', s => { if (!s.swimmer) stopSwim(); });
   function recompute() {
     dirty = false;
     if (!world || !swimmer) return;
-    const at = physicsTime(), byRoute = new Map(), t0 = performance.now();
+    const at = state.swimming && state.physics ? state.physics.at : physicsTime(), byRoute = new Map(), t0 = performance.now();
     for (const r of world.routes) byRoute.set(r.id, integrateRoute(r, at, state.paceMps, world.field));
     set({ physics: { at, byRoute, ms: performance.now() - t0 } });
     const r = world.routes.find(x => x.id === state.routeId) || world.routes[0];
@@ -128,18 +138,21 @@ export async function start({ canvas, mapEl, params, onResize, live, nextWorld }
   }
   function tickBody(dt) {
     if ((frozen && !forceRender) || !particles || !swimmer || (document.hidden && !forceRender)) return;
-    if (state.show.streaks) particles.step(dt, effectiveTime()); else if (streaksWere) particles.clear();
+    if (state.show.streaks) particles.step(dt, displayTime()); else if (streaksWere) particles.clear();
     streaksWere = state.show.streaks;
-    if (!state.paused && state.show.swimmer) swimmer.step(dt);
+    if (state.swimming && !state.paused) {
+      if (swimmer.step(dt)) stopSwim();                                       // lap over: the swimmer is back at the start, the picture returns to now
+      else state.swimAt = state.physics ? state.physics.at + swimmer.elapsed * 1000 : null;
+    }
     if ((hudTick = (hudTick + 1) % 8) === 0) { hud.setElapsed(swimmer.elapsed, CONFIG.anim.speedup * (state.tempo || 1)); hud.setSpeed(swimmer.speedMps); }
-    if (state.debug) drawDebug(effectiveTime());
+    if (state.debug) drawDebug(displayTime());
   }
   requestAnimationFrame(tick);
-  /** Test hooks: ?frames=N renders N frames after the first mount and freezes; stepFrames() advances a frozen page. */
+  /** Test hooks: ?frames=N starts the swim, renders N frames after the first mount and freezes; stepFrames() advances a frozen page. */
   function stepFrames(n, dt = 1 / 30) { if (dirty) recomputeSafe(); forceRender = true; try { for (let i = 0; i < n; i++) tickBody(dt); } finally { forceRender = false; } }
   async function afterMount() {
     if (!Number.isFinite(frames)) return;
-    try { await world?.photo.ready; await new Promise(r => setTimeout(r, 50)); stepFrames(frames); hud.setElapsed(swimmer?.elapsed ?? 0, CONFIG.anim.speedup * (state.tempo || 1)); hud.setSpeed(swimmer?.speedMps ?? 0); }
+    try { await world?.photo.ready; await new Promise(r => setTimeout(r, 50)); if (state.show.swimmer) set({ swimming: true }); stepFrames(frames); hud.setElapsed(swimmer?.elapsed ?? 0, CONFIG.anim.speedup * (state.tempo || 1)); hud.setSpeed(swimmer?.speedMps ?? 0); }
     finally { frozen = true; document.documentElement.classList.add('snapshot-ready'); }
   }
 
