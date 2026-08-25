@@ -26,7 +26,7 @@ const overrides = [C => {
 const playOptions = (res, route) => {
   const T = res.profile.totalSeconds, swept = res.profile.sweptAt, full = route.meters / state.paceMps;
   const realSeconds = swept == null ? presets.swimSeconds : Math.max(2, Math.min(presets.swimSeconds, presets.swimSeconds * swept / full));
-  return { realSeconds, sweptRealSeconds: presets.sweptSeconds, crumbsPerSwim: presets.crumbsPerSwim?.[state.world] ?? 0, tailFrac: presets.tailFrac };
+  return { realSeconds, sweptRealSeconds: presets.sweptSeconds, crumbsPerSwim: presets.crumbsPerSwim?.[state.world] ?? 0 };
 };
 
 let busy = false, overlay = null;
@@ -37,6 +37,8 @@ const b = await boot({
   runtime: { playOptions, windowScan: 'infeasible', followSwimmer: presets.streaksFollowSwimmer },
 });
 overlay = createOverlay({ live: b.live });
+let tick = 0;
+b.services.onTick((dt, force) => { if (force || ++tick % 4 === 0) overlay.renderClock(); });   // the clock follows the swimmer during a swim
 let lastSwitch = performance.now();
 /** Hold: the next view through black — fade out, switch, wait for the photo, fade up. */
 async function switchView() {

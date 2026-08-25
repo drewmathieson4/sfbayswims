@@ -73,7 +73,7 @@ export const CONFIG = {
   route: { doneWidth: 1, dotR: 3.5, followOffsetM: 15, keepRightM: 4 },   // dotR = swimmer unit size in metres (the Bay uses 60)
   swimmer: { icon: 'glyph', size: 1.5, strokeHz: 0.5, armReach: 0.8,     // icon: glyph | beacon (white dot + pulse; key i toggles)
     glyph: { head: 0.34, headY: 1.35, shoulder: 0.42, shoulderY: 0.85, hip: 0.22, length: 2.1, armX: 0.7, armW: 1.0 } },  // in units of route.dotR
-  trace: { mode: 'comet', tailS: 30, tailSegments: 14, crumbs: true, crumbEveryS: 15 },   // mode: none | comet | ink
+  trace: { mode: 'none', tailS: 30, tailSegments: 14, crumbs: true, crumbEveryS: 15 },   // the swum path: none (crumbs only) | comet | ink
   uiScale: 1,
   show: { swimmer: true, streaks: true, ui: true },     // keys a / s / u; ?swimmer=0 ?streaks=0 ?ui=0; ?static=1 = still photo
   hud: { scrubbedWater: 'label', scrubbedWind: 'hide' },   // live-only readings while time-travelling: 'label' (adds "now") | 'hide'

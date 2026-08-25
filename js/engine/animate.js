@@ -12,7 +12,7 @@ export function createSwimmer({ routeLayer, swimmerLayer, config = CONFIG }) {
   const icon = el('g', { class: 'icon' }, swimmerLayer);
   let profile = null, tau = 0, hold = 0, armPhase = 0, crumbCount = 0, parts = {}, iconKey = '';
   let panic = 0;                                         // effort from the physics: 0 cruising · 0.5 sprint · 1 fighting · 0.3 carried
-  let play = {};                                         // per-swim playback from setRoute(prof, opts): rate, sweptRate, crumbEveryS, tailS (null = config)
+  let play = {};                                         // per-swim playback from setRoute(prof, opts): rate, sweptRate, crumbEveryS (null = config)
   const R = () => config.route.dotR, S = () => config.swimmer.size;
 
   // ---- icon ----
@@ -61,7 +61,7 @@ export function createSwimmer({ routeLayer, swimmerLayer, config = CONFIG }) {
     else if (tr.mode === 'ink') { tailG.style.display = 'none'; done.style.display = ''; done.setAttribute('d', pathBetween(0, tau)); }
     else {                                              // comet: N segments fading behind the swimmer
       done.style.display = 'none'; tailG.style.display = '';
-      const N = tr.tailSegments, span = Math.min(tau, play.tailS ?? tr.tailS);
+      const N = tr.tailSegments, span = Math.min(tau, tr.tailS);
       while (tailG.children.length < N) el('path', {}, tailG);
       for (let k = 0; k < N; k++) {
         const seg = tailG.children[k], t1 = tau - span * k / N, t0 = tau - span * (k + 1) / N;
@@ -81,8 +81,8 @@ export function createSwimmer({ routeLayer, swimmerLayer, config = CONFIG }) {
 
   /**
    * Plays this profile. opts (the frame): realSeconds — the swim (up to the swept point) lasts this many real seconds;
-   * sweptRealSeconds — the fight + drift last this long; crumbsPerSwim — N crumbs over the swim (0 = none); tailFrac —
-   * the comet tail as a fraction of the swim. Without opts the config's tempo, crumbEveryS and tailS apply.
+   * sweptRealSeconds — the fight + drift last this long; crumbsPerSwim — N crumbs over the swim (0 = none). Without opts
+   * the config's tempo and crumbEveryS apply.
    */
   function setRoute(prof, opts = null) {
     profile = prof.profile; tau = Math.min(tau, profile.totalSeconds); crumbsG.innerHTML = ''; crumbCount = 0;
@@ -91,7 +91,6 @@ export function createSwimmer({ routeLayer, swimmerLayer, config = CONFIG }) {
       rate: opts?.realSeconds ? swim / opts.realSeconds : null,
       sweptRate: opts?.sweptRealSeconds && sw != null ? (T - sw) / opts.sweptRealSeconds : null,
       crumbEveryS: opts?.crumbsPerSwim != null ? (opts.crumbsPerSwim > 0 ? swim / opts.crumbsPerSwim : Infinity) : null,
-      tailS: opts?.tailFrac ? swim * opts.tailFrac : null,
     };
     buildIcon(); place(0);
   }

@@ -47,8 +47,7 @@
    "speedup": 150
   },
   "trace": {
-   "crumbEveryS": 180,
-   "tailS": 240
+   "crumbEveryS": 180
   },
   "particles": {
    "perCells": 400,

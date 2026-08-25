@@ -3,19 +3,20 @@
 html, body { overflow: hidden; }
 html.idle, html.kiosk { cursor: none; }
 
-/* labels: white ink, a soft shadow instead of a panel, inset 3 % inside the mat's shadow */
+/* labels: white ink, a soft shadow instead of a panel, inset 3 % inside the mat's shadow. Top-left: the view title and
+   the time (the swimmer's during a swim); top-right: water · current · wind, and the swim's caption beneath. */
 .label { position: absolute; z-index: 5; pointer-events: none; color: rgba(255, 255, 255, 0.85); font-size: calc(12px * var(--ui-scale)); font-weight: 400;
   letter-spacing: 0.2em; text-transform: uppercase; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6), 0 0 14px rgba(0, 0, 0, 0.4); transition: opacity 0.4s; white-space: nowrap; }
 .label.tl { top: 3%; left: 3%; }
 .label.tr { top: 3%; right: 3%; text-align: right; }
-.label.bl { bottom: 3%; left: 3%; }
-.label.hint { top: calc(3% + 2.2em); left: 3%; color: rgba(255, 255, 255, 0.6); }
-.label:empty { display: none; }
+.label .sub { margin-top: 0.55em; color: rgba(255, 255, 255, 0.7); transition: opacity 0.6s; }
+.label.hint { top: calc(3% + 3.6em); left: 3%; color: rgba(255, 255, 255, 0.6); }
+.label div:empty, .label:empty { display: none; }
 html.no-ui .label:not(.hint) { opacity: 0; }                                  /* double-click: overlay off (the offline hint stays) */
 
-/* the swimmer, its trace, the caption and the streaks fade between swims; the switches fade instead of vanishing */
+/* the swimmer, its crumbs and the caption fade between swims (the streaks keep drifting); the switches fade instead of vanishing */
 #svg #route, #svg #swimmer, #particles { transition: opacity 0.6s; }
-html.fading #svg #route, html.fading #svg #swimmer, html.fading #caption, html.fading #particles { opacity: 0; transition: opacity 1s 1s; }   /* hold 1 s, fade 1 s */
+html.fading #svg #route, html.fading #svg #swimmer, html.fading #caption { opacity: 0; transition: opacity 1s 1s; }   /* hold 1 s, fade 1 s */
 html.no-swimmer #svg #route, html.no-swimmer #svg #swimmer { display: inline; opacity: 0; }
 html.no-streaks #particles { display: block; opacity: 0; transition: opacity 1.5s; }
 html.quiet #map { filter: brightness(0.35); transition: filter 2s; }

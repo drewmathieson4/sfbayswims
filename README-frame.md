@@ -5,9 +5,10 @@ back, one cord to the wall, one hidden button under the bottom rail, a light sen
 picture dims with the room. From across the room it should pass for a framed aerial photo.
 
 The frame runs the **Frame app** (`frame/index.html`, `js/frame/`, see SPEC.md Product A): the view's swims
-play in turn, each starting from *now* and scaled to 20 seconds; while a swim plays the streaks and the
-current reading follow the swimmer; between swims the water is simply now. Three museum-label lines — the
-view title, `63°F · flood 1.2 kn · wind W 12 kn`, and `Alcatraz · 1:12` while a swim plays — and nothing else.
+play in turn, each starting from *now* and scaled to one minute; while a swim plays the time, the streaks and
+the current reading follow the swimmer; between swims the water is simply now. Museum labels only — top-left the
+view title and the time, top-right `63°F · flood 1.2 kn · wind W 12 kn` with `Alcatraz · 1:12` beneath it while a
+swim plays — and nothing else.
 Online you can try it at `/frame/` (click, double-click, triple-click and hold on the picture, or the space bar).
 
 Parts, prices and links are in the plan (`~/.claude/plans/ok-perfect-this-is-glimmering-galaxy.md`,
@@ -82,15 +83,15 @@ stays on for debugging). `lsusb` on the Pi lists it as a keyboard.
 
 ## 3. What the frame does on its own
 
-- The swims cycle by themselves: each starts from the current minute, lasts `swimSeconds` (20 s), holds a
-  second, fades, rests two seconds of bare water, then the next; a swim the current makes impossible plays its
+- The swims cycle by themselves: each starts from the current minute, lasts `swimSeconds` (60 s), holds a
+  second, fades, rests two seconds, then the next; a swim the current makes impossible plays its
   fight and drift (`sweptSeconds`) with the caption *too much current · next 4:10pm*. Display never blanks
   (wake lock + OS settings).
 - **Hidden presets** — `data/frame.json` in the repo, overridden by `data/frame.local.json` on this frame (not
   in git; survives `install.sh`), then URL flags (`?view=bay&swimmer=0&swimSeconds=30&pace=1:40`). Keys: `view`
   (`cove` | `bay` | `alternate` + `alternateEveryMin`), the three switches, `pace`, `swimSeconds`, `holdSeconds`,
   `fadeSeconds`, `restSeconds`, `sweptSeconds`, `skipInfeasible`, `streaksFollowSwimmer`, `routes` (per view, an
-  id list or `null` = all), `crumbsPerSwim`, `tailFrac`, `icon` (`glyph` | `beacon`), `streakAlpha`, `maxFps`,
+  id list or `null` = all), `crumbsPerSwim` (per view), `icon` (`glyph` | `beacon`), `streakAlpha`, `maxFps`,
   `quietHours` (`{ "from": "23:00", "to": "06:00", "mode": "still" | "dark" }`), `persistSwitches`,
   `resetDaily`, `ambient`, `reloadAt`.
 - Live data refreshes on the app's own schedule; with no network it keeps animating from the

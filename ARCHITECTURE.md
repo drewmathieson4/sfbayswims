@@ -116,8 +116,8 @@ occluded tab.
 `?mask=1`, a status line — on a canvas created on demand.
 
 **`js/engine/animate.js`** — the swimmer: the tapered glyph (or a dot) rotated to the crab heading, arms stroking at a
-rate that rises with `effort`, the comet tail or ink line, breadcrumbs every `crumbEveryS` (appended, not
-rebuilt), and the swept-away playback: fight at full opacity, then fade, pause; `step()` then reports the lap over and the
+rate that rises with `effort`, breadcrumbs every `crumbEveryS` (appended, not rebuilt) as the trace — `trace.mode` can
+add a comet tail or an ink line, off by default — and the swept-away playback: fight at full opacity, then fade, pause; `step()` then reports the lap over and the
 swimmer waits at the start.
 
 **`js/engine/particles.js`** — the streaks: N particles (sized to the water area in view) stepping with the field,
@@ -150,7 +150,7 @@ in turn (each re-integrated at the current minute, scaled by `playOptions` to `s
 (hold + fade in CSS) → the runtime's end pause resets the swimmer unseen → rest → next; quiet hours; a once-a-second
 watchdog); **`button.js`** decodes click / double / triple / hold from the Pico's held `b`, the space bar or the
 pointer; **`overlay.js`** renders the title, the conditions line at `displayTime()` and the caption. `animate.js`
-takes per-swim play options (`realSeconds`, `sweptRealSeconds`, `crumbsPerSwim`, `tailFrac`) from
+takes per-swim play options (`realSeconds`, `sweptRealSeconds`, `crumbsPerSwim`) from
 `setRoute(prof, opts)`.
 
 **`js/frame/ambient.js`** — kiosk only: polls `/ambient.json` (the Pi's light sensor) and eases a black overlay and a
