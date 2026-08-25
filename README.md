@@ -1,17 +1,18 @@
 # SF Bay Swims — swim conditions for Aquatic Park and the Bay
 
 An aerial view of Aquatic Park Cove (San Francisco) showing the tidal current as drifting streaks, the water
-temperature, and five swim routes. For each route the rail shows the distance and the estimated time *under the
-conditions at the selected moment*; **▶ start** sends a swimmer round the course at time-compressed speed, and while
-they swim the clock, the streaks and the current reading follow *them* — a long swim shows the tide turning under the
-swimmer. Hold an arrow key to travel through the coming days and watch the estimates and the streaks change.
+temperature, and five swim routes. For each route it shows the distance and the estimated time *under the
+conditions at the selected moment*; **▶ preview** sends a swimmer round the course at time-compressed speed, and
+while they swim the clock, the streaks and the current reading follow *them* — a long swim shows the tide turning under
+the swimmer. Drag the timeline or hold an arrow key to travel through the coming days and watch the estimates and the
+streaks change.
 
 A second view (`v`), **San Francisco Bay**, zooms out to the Golden Gate → Bay Bridge with the long swims — Alcatraz,
 Escape from Alcatraz, the Golden Gate, Golden Gate → Aquatic Park, Bridge to Bridge both ways, Round Angel Island,
 Angel Island → Aquatic Park — over a current field blended from 43 NOAA stations. When a swim can't be held against
-the current the rail says so, names the next and best start in the coming 48 h, and the swimmer is swept away.
+the current it says so, names the next and best start in the coming 48 h, and the swimmer is swept away.
 
-This is two products on one engine — the **Planner** (this page, being built out) and the wall-hung **Frame**
+This is two products on one engine — the **Planner** (this page) and the wall-hung **Frame**
 (`frame/` — the view's swims play in turn, 20 seconds each from now, with the water following the swimmer; one
 button: click swimmer, double-click overlay, triple-click streaks, hold to switch view) — see [SPEC.md](SPEC.md)
 and [README-frame.md](README-frame.md).
@@ -24,35 +25,35 @@ No build step, no server code — any static file server:
 
 ```
 python3 tools/serve.py 8000          # or: python3 -m http.server 8000
-open http://localhost:8000
+open http://localhost:8000           # the Planner · http://localhost:8000/frame/ is the Frame
 ```
 
-**Controls:** tap / click the map (or `↓` `↑`) — next / previous route · `←` `→` — travel in time: a tap moves
-5 minutes, holding accelerates to a day every few seconds; the top-left corner reads *current* on the live clock,
-otherwise the date and time · `n` / `Esc` — back to current · **`v`** — switch view (each view remembers its
-route) · **▶ start** in the rail, or `space` — start the swim; again to pause / resume (the top-left clock then reads
-*swimming · 11:22pm*, the swimmer's own moment, until the finish returns everything to *current*; changing the route,
-view or time stops the swim) · `i` — swimmer glyph ↔ white dot with a beacon · `[` `]` — animation slower /
-faster (the multiplier shows next to *elapsed*) · `-` `+` — pace ±1 s per 100 yd · `a` `s` `u` — swimmer / streaks /
-UI overlay on or off · `p` — photo mode (swimmer and overlay off together) · `d` — debug overlay (current arrows,
-stations; add `?mask=1` for the water mask) · `h` — hide the controls legend in the bottom-right corner (it never
-shows in kiosk mode). The rail's **speed** row is the swimmer's ground speed right now as time
-per 100 yd, whole seconds — it changes with the current along the route. While time-travelling the water temperature is tagged *now* and the wind is
-hidden (`hud` in config).
+**The Planner** (`/`): pick a **spot** (Aquatic Park, San Francisco Bay), a **swim** and its direction (one-way and loop
+swims can be swum the other way), a **start** (the date-time field, `now`, ±5 min / ±1 h, or drag the playhead on the
+timeline strip along the bottom), and your **pace** (mm:ss per 100 yd or 100 m; *Advanced* exposes the sprint reserve
+and the ground speed below which the swimmer is swept). The result card shows the distance, the estimated time, the
+**finish in clock time**, the strongest current met and where, *too much current* with the next and best start in
+48 h when a swim can't be made, and **▶ preview** — the swimmer plays the swim with the clock, streaks and current
+following them (the slider sets the speed). The top-right corner reads the water temperature, the current at the
+Opening (cove) or the Alcatraz station (Bay) with `≈` when a station runs on its bundled prediction, the wind, and the
+tide with the next high or low. The **timeline** shows the reference current for 48 hours (flood above the axis, ebb
+below), slack times, night, the swim as a bar (red where swept) and *now*. Hover (or tap on a phone) anywhere on the
+water for the current at that point and moment. *copy link* puts the whole plan in the URL; *settings · about* has
+units, the map layers, the keys, the data sources and what the numbers do and don't mean.
 
-**URL flags:** `?world=bay` · `?route=cw` · `?t=2026-09-01T14:00-07:00` (freeze the time) · `?kiosk=1` (no cursor,
-wake lock, nightly reload, remembers the view, drifts back to *current* after 10 idle minutes) · `?fps=30` ·
-`?pace=1:45` · `?static=1` (still photo) · `?swimmer=0` `?streaks=0` `?ui=0` · `?still=1` (zero current) ·
-`?kn=2.5` (force a uniform current: + flood, − ebb) · `?offline=1` (bundles only) · `?debug=1` ·
-`?frames=90&seed=1` (test hook: render 90 frames and freeze — the way to check the app in an occluded tab).
+**Keys:** `← →` start ±5 min (hold to accelerate; `⇧` for ±1 h) · `↑ ↓` swim · `r` the other way · `n` now · `space`
+preview / pause · `s` streaks · `c` current arrows · `- +` pace ±1 s · `v` next spot · `?` the settings sheet.
+
+**URL flags:** `?world=bay` · `?route=b2b_west` (a twin's id, e.g. `alcatraz~`, carries the direction) ·
+`?t=2026-09-01T14:00-07:00` · `?pace=0.87` (m/s) or `?pace=1:45` (per 100 m) · `?units=m&temp=C` · `?offline=1`
+(bundles only) · `?debug=1` · `?frames=90&seed=1` (test hook: render 90 frames and freeze).
 
 ## Layout
 
 ```
-index.html  js/main.js  css/app.css       the app's page, entry and UI sheet
+index.html  js/planner/  css/planner.css   the Planner: main, panel, hud, timeline, probe, keys, share
 frame/index.html  js/frame/  css/frame.css  data/frame.json   the Frame: presets, cycle, button, overlay (+ kiosk, ambient)
 js/engine/  css/engine.css                the shared engine: boot, runtime, worlds, fields, physics, swimmer, streaks, data (23 modules)
-js/planner/ hud.js keys.js                the HUD, rail and keys        js/frame/ kiosk.js ambient.js   kiosk behaviour, room-light dimming
 data/tides-2026.json                      the year's tide extremes (shared)
 data/currents-2026.json                   the cove's outside current, SFB1204, 6-min
 data/watertemp-climatology.json           day-of-year water temperature (fallback)

@@ -106,5 +106,5 @@ export async function boot({ params = new URLSearchParams(location.search), over
     catch (e) { console.error('app start failed:', e.message, e.stack); window.APP.startError = e; }
     setTimeout(() => { for (const id of ids) if (id !== state.world) loadWorld(id).catch(e => console.warn('preload', id, e.message)); }, 5000);
   }
-  return { services, live, ids, dom: d, params, activateFirst, switchWorld, nextWorld };
+  return { services, live, ids, index, dom: d, params, activateFirst, switchWorld, nextWorld };
 }

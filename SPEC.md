@@ -281,4 +281,7 @@ Bay-swim start), **China Beach / Lands End** (outside the Gate; strong current, 
 - 2026-08-25 — Phase 0 (rename) and Phase 1 (engine split, `js/engine/`) merged; the combined app at `/` still
   serves as it did.
 - 2026-08-25 — Phase 2, the Frame at `frame/` (branch `frame`): cycle, button decoder, overlay, presets,
-  transitions, Pi kit (kiosk URL, Pico `b`). Next: Phase 3, the Planner at `/`.
+  transitions, Pi kit (kiosk URL, Pico `b`); merged.
+- 2026-08-25 — Phase 3, the Planner v1 at `/` (branch `planner`): panel, HUD, timeline, direction twins, preview,
+  units, share links, probe, settings/about sheet, keys, phone layout; the legacy combined app removed. Next:
+  Phase 4 (legs + route colouring, best starts over n tide cycles / every swim / a date, favourites).

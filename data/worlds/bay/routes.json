@@ -1,5 +1,5 @@
 {
- "note": "Bay swims: straight legs between points (no pier-following); oneWay = point-to-point. Aquatic Park finishes go off_opening \u2192 opening \u2192 gate \u2192 start (Alcatraz comes straight down from the north). Bridge to Bridge is swum both ways: Golden Gate \u2192 Bay Bridge on the flood, Bay Bridge \u2192 Golden Gate on the ebb (same line, reversed).",
+ "note": "Bay swims: straight legs between points (no pier-following); oneWay = point-to-point. Aquatic Park finishes go off_opening → opening → gate → start (Alcatraz comes straight down from the north). Bridge to Bridge is swum both ways: Golden Gate → Bay Bridge on the flood, Bay Bridge → Golden Gate on the ebb (same line, reversed).",
  "routes": [
   {
    "id": "alcatraz",
@@ -73,7 +73,8 @@
     "off_fort_mason",
     "off_marina",
     "ggb_south"
-   ]
+   ],
+   "reverseOf": "b2b"
   },
   {
    "id": "angel_round",
