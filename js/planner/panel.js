@@ -1,9 +1,11 @@
 // The panel: spot · swim (+ direction) · start · pace (+ advanced physics) · the result card (+ preview) · tools; the
 // settings / about sheet; the phone handle. Everything reads state and writes it with set(); the runtime does the rest.
+import { span } from './dom.js';
+import { validPace, customSwim } from '../engine/validate.js';
 import { CONFIG } from '../engine/config.js';
 import { state, set, on, effectiveTime } from '../engine/state.js';
 import { tzParts, localToEpoch, fmtTime, fmtDate, fmtDateYear } from '../engine/data.js';
-import { units, setUnits, fmtMMSS, fmtDist, fmtPace, fmtPaceOnly, parsePace, paceUnit, per100 } from '../engine/format.js';
+import { units, setUnits, fmtMMSS, fmtDist, fmtPace, fmtPaceOnly, parsePace, paceUnit } from '../engine/format.js';
 import { toggleShow } from '../engine/show.js';
 import { KN } from '../engine/current.js';
 import { planUrl } from './share.js';
@@ -41,7 +43,7 @@ export function createPanel({ b, settings, saveSettings, recomputePhysics, draw 
     swims.innerHTML = '';
     for (const r of listed()) {
       const btn = document.createElement('button'); btn.type = 'button';
-      btn.innerHTML = `<span>${r.custom ? '✎ ' : ''}${r.name}</span><span class="d">${fmtDist(r.meters)}</span>`;
+      span(btn, '', `${r.custom ? '✎ ' : ''}${r.name}`); span(btn, 'd', fmtDist(r.meters));
       btn.classList.toggle('on', prim?.id === r.id); btn.onclick = () => set({ routeId: r.id });
       swims.appendChild(btn);
     }
@@ -73,7 +75,7 @@ export function createPanel({ b, settings, saveSettings, recomputePhysics, draw 
   paceIn.addEventListener('change', () => { const v = parsePace(paceIn.value); if (v) set({ paceMps: v }); else renderPace(); });
   for (const btn of document.querySelectorAll('.presets button')) btn.onclick = () => set({ paceMps: parsePace(btn.textContent) });
   const burst = $('burst'), reserve = $('reserve'), floor = $('floor');
-  const readAdvanced = () => { settings.swim = { burst: burst.checked, reserveS: +reserve.value || 0, floorMps: +floor.value || 0.25 }; saveSettings(); CONFIG.swim.burstReserveS = settings.swim.burst ? settings.swim.reserveS : 0; CONFIG.swim.minGroundMps = settings.swim.floorMps; recomputePhysics(); };
+  const readAdvanced = () => { settings.swim = { burst: burst.checked, reserveS: Math.max(0, Math.min(600, +reserve.value || 0)), floorMps: Math.max(0.05, Math.min(1, +floor.value || 0.25)) }; saveSettings(); CONFIG.swim.burstReserveS = settings.swim.burst ? settings.swim.reserveS : 0; CONFIG.swim.minGroundMps = settings.swim.floorMps; recomputePhysics(); };
   for (const el of [burst, reserve, floor]) el.addEventListener('change', readAdvanced);
   burst.checked = settings.swim.burst; reserve.value = settings.swim.reserveS; floor.value = settings.swim.floorMps;
 
@@ -108,7 +110,7 @@ export function createPanel({ b, settings, saveSettings, recomputePhysics, draw 
       const end = res.feasible ? fin : at + (res.profile.sweptAt ?? 0) * 1000;
       const dark = s.dawn != null && (at < s.dawn || end > s.dusk), dim = !dark && s.sunrise != null && (at < s.sunrise || end > s.sunset);
       rSun.innerHTML = s.sunrise ? `${fmtTime(s.sunrise)} – ${fmtTime(s.sunset)}${dark ? ' <em class="warn">· in the dark</em>' : dim ? ' <em class="warn">· at dusk</em>' : ''}` : '—'; }
-    { const hz = b.services.horizon(), fin = at + res.totalSeconds * 1000; rHorizon.textContent = isFinite(hz) && fin > hz ? `beyond the bundled predictions (they reach ${fmtDateYear(hz)})` : ''; }
+    { const hz = b.services.horizon(), fin = at + res.totalSeconds * 1000; rHorizon.textContent = !b.services.covers(at, fin) ? (isFinite(hz) ? `outside the bundled prediction coverage (latest end ${fmtDateYear(hz)})` : 'bundled predictions unavailable') : ''; }
     if (!res.feasible) { const sw = res.profile.sweptAt, leg = r.legs[Math.min(r.legs.length - 1, res.profile.leg[Math.max(0, res.profile.n - 1)])]; note.textContent = `too much current · swept ${fmtMMSS(sw ?? 0)} in${leg?.to?.name ? ` near ${leg.to.name}` : ''}`; }
     else note.textContent = '';
     renderWindows();
@@ -150,7 +152,7 @@ export function createPanel({ b, settings, saveSettings, recomputePhysics, draw 
   const ago = t => { const m = Math.round((Date.now() - t) / 60000); return m < 60 ? `${m} min ago` : m < 2880 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`; };
   function renderAbout() {
     const w = state.data.waterTemp, wd = state.data.wind, h = state.data.health || {}, parts = [];
-    parts.push(w ? `Water temperature: ${w.approx ? 'the day-of-year climatology (no live reading)' : `${w.source || 'USGS Alcatraz'}, read ${ago(w.t)}`}${h.waterTemp && !h.waterTemp.ok ? ` — last fetch failed (${h.waterTemp.err})` : ''}.` : 'Water temperature: not loaded yet.');
+    parts.push(w ? `Water temperature: ${w.source === 'climatology' ? 'the day-of-year climatology (no live reading)' : `${w.source || 'USGS Alcatraz'}, read ${ago(w.t)}`}${h.waterTemp && !h.waterTemp.ok ? ` — last fetch failed (${h.waterTemp.err})` : ''}.` : 'Water temperature: not loaded yet.');
     parts.push(wd ? `Wind: ${wd.source || 'NWS Fort Point'}, read ${ago(wd.t)}.` : `Wind: none${h.wind && !h.wind.ok ? ` (${h.wind.err})` : ''}.`);
     parts.push(`Tides: NOAA North Point extremes — bundled for the year${h.tides ? (h.tides.ok ? `, live window refreshed ${ago(h.tides.t)}` : `, live fetch failed ${ago(h.tides.t)}`) : ''}. Currents: NOAA predictions bundled for the year${state.world === 'cove' ? (h.currents ? (h.currents.ok ? `, the Alcatraz station's live window refreshed ${ago(h.currents.t)}` : `, live fetch failed ${ago(h.currents.t)}`) : '') : ' (the Bay has no live feed)'}.`);
     $('sources').textContent = parts.join(' ');
@@ -168,13 +170,13 @@ export function createPanel({ b, settings, saveSettings, recomputePhysics, draw 
 
   // ---- saved plans (localStorage plan.favourites) ----
   const favs = $('favs');
-  const loadFavs = () => { try { return JSON.parse(localStorage.getItem('plan.favourites') || '[]'); } catch { return []; } };
+  const loadFavs = () => { try { const rows = JSON.parse(localStorage.getItem('plan.favourites') || '[]'); return Array.isArray(rows) ? rows.filter(f => f && typeof f.name === 'string' && b.ids.includes(f.world) && typeof f.route === 'string' && validPace(f.pace) && (f.t === null || (Number.isFinite(f.t) && Number.isFinite(new Date(f.t).getTime()))) && (!f.custom || customSwim(f.custom))).slice(0, 20) : []; } catch { return []; } };
   const saveFavs = list => { try { localStorage.setItem('plan.favourites', JSON.stringify(list)); } catch {} };
   function renderFavs() {
     favs.innerHTML = '';
     for (const [i, f] of loadFavs().entries()) {
       const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'fav';
-      btn.innerHTML = `<span>${f.custom ? '✎ ' : ''}${f.name}</span><span class="x" title="forget">×</span><span class="d">${f.t ? fmtWhen(f.t) : 'now'} · ${fmtPaceOnly(f.pace)} ${paceUnit()}</span>`;
+      span(btn, '', `${f.custom ? '✎ ' : ''}${f.name}`); span(btn, 'x', '×').title = 'forget'; span(btn, 'd', `${f.t ? fmtWhen(f.t) : 'now'} · ${fmtPaceOnly(f.pace)} ${paceUnit()}`);
       btn.onclick = async e => {
         if (e.target.classList.contains('x')) { const l = loadFavs(); l.splice(i, 1); saveFavs(l); renderFavs(); return; }
         if (f.world !== state.world) await b.switchWorld(f.world);
@@ -190,7 +192,7 @@ export function createPanel({ b, settings, saveSettings, recomputePhysics, draw 
   // ---- wiring ----
   on('world', () => { renderSpots(); renderSwims(); renderRoute(); renderPeek(); renderTempo(); });
   on('routeId', () => { renderSwims(); renderRoute(); renderPeek(); });
-  on('physics', () => { renderRoute(); renderPeek(); }); on('windows', renderWindows);
+  on('physics', () => { if (current()?.custom) renderSwims(); renderRoute(); renderPeek(); }); on('windows', renderWindows);
   on('selectedTime', () => { renderStart(); }); on('now', () => { if (state.selectedTime == null) renderStart(); });
   on('paceMps', () => { renderPace(); });
   on('swimming', renderStartBtn); on('paused', renderStartBtn); on('tempo', renderTempo);

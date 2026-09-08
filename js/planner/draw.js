@@ -2,6 +2,7 @@
 // it, undo, choose the shape (one way · out and back · loop), name it. The route is rebuilt on every change through the
 // same builder as routes.json, so the physics, the legs and the best starts work on it at once. A custom swim travels
 // in the share URL (wp=) and in saved plans.
+import { customSwim, MAX_WAYPOINTS } from '../engine/validate.js';
 import { CONFIG } from '../engine/config.js';
 import { state, set, bumpData, on } from '../engine/state.js';
 import { buildRoutes } from '../engine/routes.js';
@@ -14,7 +15,8 @@ export function createDraw({ b, onChange = null }) {
   const html = document.documentElement, map = b.dom.mapEl, live = b.live;
   const st = { on: false, name: '', mode: 'oneway', points: [] };            // points: { lat, lon, id?, name? }
   const ui = { bar: $('draw-bar'), name: $('draw-name'), mode: $('draw-mode'), warn: $('draw-warn'), start: $('draw-start'), seed: $('draw-seed'), undo: $('draw-undo'), clear: $('draw-clear'), done: $('draw-done'), cancel: $('draw-cancel'), count: $('draw-count') };
-  let group = null, groupLayer = null, drag = null, down = null;
+  let group = null, groupLayer = null, drag = null, down = null, previousWorld = null;
+  const drafts = new Map();
   const world = () => live.world;
   const xy = p => world().proj.project(p.lat, p.lon);
   const unproject = (clientX, clientY) => { const v = state.view, r = map.getBoundingClientRect(); return { x: v.x0 + (clientX - r.left) / v.s, y: v.y1 - (clientY - r.top) / v.s }; };
@@ -31,7 +33,8 @@ export function createDraw({ b, onChange = null }) {
     const i = w.routes.findIndex(r => r.id === 'custom'); if (i >= 0) w.routes.splice(i, 1);
     ui.warn.textContent = '';
     if (st.points.length >= 2) {
-      const json = { routes: [{ id: 'custom', name: st.name.trim() || 'Custom swim', oneWay: st.mode === 'oneway', loop: st.mode === 'loop',
+      if (!customSwim(st, w.world.bbox)) { ui.warn.textContent = `Use 2–${MAX_WAYPOINTS} points inside this spot, with a total length below 100 km.`; if (state.routeId === 'custom') set({ routeId: w.routes[0].id }); return; }
+      const json = { routes: [{ id: 'custom', name: st.name.trim().slice(0, 120) || 'Custom swim', oneWay: st.mode === 'oneway', loop: st.mode === 'loop',
         waypoints: st.points.map((p, k) => (p.id ? p.id : { lat: p.lat, lon: p.lon, name: String(k + 1) })) }] };
       try {
         const { routes } = buildRoutes(json, w.landmarksJson, w.geom, { proj: w.proj, followOffsetM: CONFIG.route.followOffsetM, keepRightM: CONFIG.route.keepRightM, turnRadiusM: CONFIG.route.turnRadiusM });
@@ -67,6 +70,7 @@ export function createDraw({ b, onChange = null }) {
     if (moved || dt > 600) return;
     const q = unproject(e.clientX, e.clientY);
     if (!world().field.isWater(q.x, q.y)) { ui.warn.textContent = 'that is land'; return; }
+    if (st.points.length >= MAX_WAYPOINTS) { ui.warn.textContent = `Maximum ${MAX_WAYPOINTS} points`; return; }
     st.points.push(pointAt(q.x, q.y)); rebuild();
   });
   function begin(seed = null) {
@@ -88,12 +92,17 @@ export function createDraw({ b, onChange = null }) {
   ui.cancel.onclick = () => end(false);
   ui.name.addEventListener('input', () => { st.name = ui.name.value; rebuild(); });
   ui.mode.addEventListener('change', () => { st.mode = ui.mode.value; rebuild(); });
-  on('world', () => { groupLayer = null; if (st.on) end(false); else { st.points = []; } });
+  on('world', id => {
+    if (previousWorld) drafts.set(previousWorld, { name: st.name, mode: st.mode, points: st.points.map(p => ({ ...p })) });
+    previousWorld = id; groupLayer = null; drag = down = null; st.on = false;
+    html.classList.remove('drawing'); ui.bar.hidden = true; ui.start.hidden = false;
+    const saved = drafts.get(id); st.name = saved?.name || ''; st.mode = saved?.mode || 'oneway'; st.points = saved?.points.map(p => ({ ...p })) || [];
+  });
   return {
     /** The custom swim as data (for saved plans and the URL), or null. */
-    get custom() { return (live.routes || []).some(r => r.id === 'custom') ? { name: st.name.trim() || 'Custom swim', mode: st.mode, points: st.points.map(p => ({ lat: p.lat, lon: p.lon })) } : null; },
+    get custom() { return (live.routes || []).some(r => r.id === 'custom') ? { name: st.name.trim().slice(0, 120) || 'Custom swim', mode: st.mode, points: st.points.map(p => ({ lat: p.lat, lon: p.lon })) } : null; },
     /** Build and select a custom swim from data (a shared link or a saved plan). */
-    load(c) { st.points = c.points.map(p => ({ lat: +p.lat, lon: +p.lon })); st.name = c.name || 'Custom swim'; st.mode = c.mode || 'oneway'; if (st.on) { ui.name.value = st.name; ui.mode.value = st.mode; } rebuild(); },
+    load(c) { c = customSwim(c, world()?.world.bbox); if (!c) { ui.warn.textContent = 'Invalid shared swim for this spot'; return false; } st.points = c.points.map(p => ({ lat: +p.lat, lon: +p.lon })); st.name = c.name || 'Custom swim'; st.mode = c.mode || 'oneway'; if (st.on) { ui.name.value = st.name; ui.mode.value = st.mode; } rebuild(); },
     get drawing() { return st.on; },
   };
 }

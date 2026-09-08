@@ -11,9 +11,10 @@ const D2R = Math.PI / 180;
 
 /** A time series of current vectors; from NOAA samples or a compact bundle {t0, dtMs, kn[], dir[]}. */
 export class CurrentSeries {
-  constructor({ samples, t0, dtMs, kn, dir, station = null }) {
+  constructor({ samples, t0, dtMs, kn, dir, station = null, bundled = false }) {
+    this.bundled = bundled || !!kn;
     if (!samples && kn) samples = kn.map((k, i) => ({ t: t0 + i * dtMs, kn: k, dir: dir[i] }));
-    const s = samples.slice().sort((a, b) => a.t - b.t);
+    const s = (samples || []).slice().sort((a, b) => a.t - b.t);
     this.t = Float64Array.from(s, e => e.t);
     this.u = Float32Array.from(s, e => e.kn * KN * Math.sin(e.dir * D2R));
     this.v = Float32Array.from(s, e => e.kn * KN * Math.cos(e.dir * D2R));
@@ -34,7 +35,7 @@ export class CurrentSeries {
       i = lo; this._i = i;
     }
     const f = (t - this.t[i]) / (this.t[i + 1] - this.t[i]);
-    return this._pack(this.u[i] + (this.u[i + 1] - this.u[i]) * f, this.v[i] + (this.v[i + 1] - this.v[i]) * f, false);
+    return this._pack(this.u[i] + (this.u[i + 1] - this.u[i]) * f, this.v[i] + (this.v[i + 1] - this.v[i]) * f, this.bundled);
   }
   _pack(u, v, approx) { return { u, v, kn: Math.hypot(u, v) / KN, dir: (Math.atan2(u, v) / D2R + 360) % 360, approx }; }
   /** Join bundles (this year's and next year's) or sample lists. */
@@ -42,7 +43,7 @@ export class CurrentSeries {
     const samples = [];
     for (const b of bundles) { if (!b) continue; if (b.samples) samples.push(...b.samples); else if (b.kn) b.kn.forEach((k, i) => samples.push({ t: b.t0 + i * b.dtMs, kn: k, dir: b.dir[i] })); }
     const byT = new Map(); for (const s of samples) byT.set(s.t, s);
-    return new CurrentSeries({ samples: [...byT.values()], station });
+    return new CurrentSeries({ samples: [...byT.values()], station, bundled: bundles.some(b => b?.kn) });
   }
 }
 

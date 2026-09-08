@@ -10,8 +10,12 @@ resampled onto the same 30-min grid with a cosine between events, along meanFloo
 Output per station: {t0, dtMs, kn[], dir[]} (the app's CurrentSeries reads this form directly).
 """
 import json, math, datetime, time
-from _common import coops, parse_local, TZ
-from _world import DATA, world_dir, load_world, world_id, opt, iopt, year_arg
+from _common import coops, TZ
+from _bundles import atomic_write
+from _world import DATA, world_dir, world_id, opt, iopt, year_arg
+
+def parse_gmt(value):
+    return int(datetime.datetime.strptime(value[:16], "%Y-%m-%d %H:%M").replace(tzinfo=datetime.timezone.utc).timestamp() * 1000)
 
 def month_ranges(year):
     """Monthly (begin, end) YYYYMMDD pairs covering Dec 20 of the previous year to Jan 10 of the next (31-day API cap)."""
@@ -24,11 +28,11 @@ def month_ranges(year):
 def fetch_continuous(station, year, interval, bin_=None):
     samples = []
     for b, e in month_ranges(year):
-        q = {"product": "currents_predictions", "station": station, "interval": str(interval), "vel_type": "speed_dir", "begin_date": b, "end_date": e}
+        q = {"time_zone": "gmt", "product": "currents_predictions", "station": station, "interval": str(interval), "vel_type": "speed_dir", "begin_date": b, "end_date": e}
         if bin_: q["bin"] = str(bin_)
         j = coops(**q)
         for c in j["current_predictions"]["cp"]:
-            samples.append((parse_local(c["Time"]), float(c["Speed"]), float(c["Direction"])))
+            samples.append((parse_gmt(c["Time"]), float(c["Speed"]), float(c["Direction"])))
         print(f"    {station} {b}..{e}: {len(samples)} rows", end="\r", flush=True)
     samples.sort(); out = []; last = None
     for t, kn, d in samples:
@@ -38,10 +42,10 @@ def fetch_continuous(station, year, interval, bin_=None):
 def fetch_events(station, year):
     """MAX_SLACK events Dec 20 → Jan 10, in two chunks (the API caps predictions at 366 days)."""
     ev, fd, ed = [], None, None
-    for b, e in ((f"{year - 1}1220", f"{year}0630"), (f"{year}0701", f"{year + 1}0110")):
-        j = coops(product="currents_predictions", station=station, interval="MAX_SLACK", begin_date=b, end_date=e)
+    for b, e in ((f"{year - 1}1219", f"{year}0630"), (f"{year}0701", f"{year + 1}0112")):
+        j = coops(time_zone="gmt", product="currents_predictions", station=station, interval="MAX_SLACK", begin_date=b, end_date=e)
         cp = j["current_predictions"]["cp"]
-        ev += [(parse_local(c["Time"]), float(c["Velocity_Major"])) for c in cp]
+        ev += [(parse_gmt(c["Time"]), float(c["Velocity_Major"])) for c in cp]
         if fd is None: fd = cp[0].get("meanFloodDir"); ed = cp[0].get("meanEbbDir")
     return sorted(set(ev)), fd, ed
 
@@ -52,7 +56,7 @@ def cosine_resample(events, fd, ed, t0, dt, n):
     for i in range(n):
         t = t0 + i * dt
         while j + 1 < len(events) and events[j + 1][0] <= t: j += 1
-        if j + 1 >= len(events) or t < events[0][0]: v = 0.0
+        if j + 1 >= len(events) or t < events[0][0]: raise ValueError("events do not cover output grid")
         else:
             (ta, va), (tb, vb) = events[j], events[j + 1]
             tau = (t - ta) / (tb - ta) if tb > ta else 0
@@ -63,15 +67,17 @@ def cosine_resample(events, fd, ed, t0, dt, n):
     return kn, dr
 
 def main():
-    year = year_arg(); wid = world_id()
+    year = year_arg(); wid = world_id(); expected = (); failures = []
     if wid == "cove":
         station, bin_, interval = "SFB1204", 18, iopt("--interval", 6)
         samples = fetch_continuous(station, year, interval, bin_)
+        if not samples or any(b[0] - a[0] != interval * 60000 for a, b in zip(samples, samples[1:])): raise ValueError("missing/nonuniform continuous samples")
         out = {"station": station, "bin": bin_, "interval_min": interval, "generated": datetime.datetime.now().isoformat(timespec="seconds"),
                "t0": samples[0][0], "dtMs": interval * 60000, "kn": [s[1] for s in samples], "dir": [s[2] for s in samples]}
         dst = DATA / f"currents-{year}.json"
     else:
-        world = load_world(wid); st = json.loads((world_dir(wid) / "stations.json").read_text())["stations"]
+        st = json.loads((world_dir(wid) / "stations.json").read_text())["stations"]
+        expected = tuple(s["id"] for s in st)
         interval = iopt("--interval", 30); dt = interval * 60000
         t0 = int(datetime.datetime(year - 1, 12, 20, tzinfo=TZ).timestamp() * 1000)
         t1 = int(datetime.datetime(year + 1, 1, 10, tzinfo=TZ).timestamp() * 1000)
@@ -87,20 +93,23 @@ def main():
                     samples = fetch_continuous(s["id"], year, interval)
                     # snap onto the common grid (samples are on :00/:30 already at interval=30)
                     idx = {round((t - t0) / dt): (k, d) for t, k, d in samples}
-                    kn = [idx.get(i, (0.0, 0))[0] for i in range(n)]; dr = [idx.get(i, (0.0, 0))[1] for i in range(n)]
+                    if any(i not in idx for i in range(n)): raise ValueError("missing continuous samples")
+                    kn = [idx[i][0] for i in range(n)]; dr = [idx[i][1] for i in range(n)]
                     kind = "continuous"
                 else:
                     ev, fd, ed = fetch_events(s["id"], year)
-                    if fd is None or ed is None: print(f"  {s['id']}: no flood/ebb dirs, skipped"); continue
+                    if fd is None or ed is None: raise ValueError("missing flood/ebb directions")
                     kn, dr = cosine_resample(ev, fd, ed, t0, dt, n); kind = "max_slack_cosine"
                 kn = [round(v, 2) for v in kn]; dr = [int(round(v)) for v in dr]
                 stations[s["id"]] = {"t0": t0, "dtMs": dt, "kn": kn, "dir": dr, "kind": kind, "lat": s["lat"], "lon": s["lon"], "name": s["name"]}
                 print(f"  {s['id']:>8} {kind:<16} max {max(kn):.2f} kn" + " " * 20)
-            except Exception as ex:                       # one bad station must not kill the year
+            except Exception as ex:                       # report all failures, but never publish a partial year
+                failures.append(s["id"])
                 print(f"  {s['id']}: {type(ex).__name__}: {ex}")
         out = {"world": wid, "year": year, "interval_min": interval, "generated": datetime.datetime.now().isoformat(timespec="seconds"), "stations": stations}
         dst = world_dir(wid) / f"currents-{year}.json"
-    dst.write_text(json.dumps(out, separators=(",", ":")))
+    if failures: raise RuntimeError(f"Stations failed; existing bundle preserved: {failures}")
+    atomic_write(dst, out, wid, year, expected)
     print(f"wrote {dst} ({dst.stat().st_size // 1024} KB)")
 
 if __name__ == "__main__":

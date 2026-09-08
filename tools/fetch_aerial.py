@@ -12,7 +12,7 @@ import math, json, struct, zlib, datetime, io, urllib.request, urllib.parse
 from concurrent.futures import ThreadPoolExecutor
 from PIL import Image
 from _common import UA, http_range
-from _world import world_dir, load_world, bbox_of, lattice, kx, KY, fopt
+from _world import world_dir, load_world, bbox_of, lattice, fopt
 
 Image.MAX_IMAGE_PIXELS = None
 NAIP = "https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPPlus/ImageServer/exportImage"

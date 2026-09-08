@@ -1,47 +1,18 @@
-# Handoff — where things stand (2026-08-25)
+# Maintenance handoff — September 2026
 
-For whoever picks this up next (a person or an agent). The long-form docs are `README.md` (the Planner), `README-frame.md`
-(the Frame and the Pi), `ARCHITECTURE.md` (every file), `SPEC.md` (the two products and the phase log), `DATA.md` (data
-dependencies, failure modes, the bundle chore and its automation).
+The Planner and Frame remain separate products on one engine. Current behavior is in README.md and SPEC.md;
+implementation map in ARCHITECTURE.md; source/refresh operations in DATA.md. Old proposals are in docs/archive.
 
-## State
+This maintenance pass addresses shared-name HTML injection, invalid plan inputs, immediate-sweep playback,
+search cancellation and finish coverage, requested-year loading, redundant weather/preview computation,
+bundle completeness and atomic publishing, stale ambient data, configurable fades, and the eight-second button reset.
+Unused trails/helpers/extra Pico inputs are removed. Both products retain their core functionality.
 
-- **Live:** https://drewmathieson4.github.io/sfbayswims/ (the Planner) and `…/frame/` (the Frame). `main` is the only
-  branch; everything through the data audit is merged. Pages deploys `main` about a minute after a push.
-- **Routine:** one branch per change, verified, Drew spot-checks at `localhost:8000` (`python3 tools/serve.py 8000`),
-  then `git checkout main && git merge --no-ff <branch> && git branch -d <branch> && git push`.
-- **Bundles:** 2026 and 2027 committed (predictions through Jan 2028). `.github/workflows/bundles.yml` refreshes them
-  quarterly; `python3 tools/check_bundles.py` shows coverage any time.
-- **Untested on hardware:** the Pi kit (`tools/pi/`, `README-frame.md`) — flash, `install.sh`, the Pico with the new
-  `code.py` (it just holds `b`), the Bay frame-rate test.
+Run `npm test`, `npm run test:browser`, and `python3 tools/check_bundles.py` before release.
+Build with `python3 tools/build_site.py <new-directory>`. Test dependencies and rebuild inputs are not deployed.
+The provided deployment workflow needs GitHub Pages Source set to GitHub Actions; no remote setting has been changed
+by this local maintenance pass. No commit, merge, or deployment is implied by editing this checkout.
 
-## Two products, two kinds of work
-
-The **gift** (the Frame + the Raspberry Pi) and the **website** (the Planner) are separate products on one engine. An
-agent doing Pi/frame work should start from the box at the top of `README-frame.md`, which scopes exactly what to
-touch; an agent doing website work starts here and in `SPEC.md`. Changes to `js/engine/` affect both — check the other
-product before merging.
-
-## Open list (from SPEC.md "later")
-
-Compare two starts or swims side by side · a 7-day calendar of best starts · lighter Bay bundles for phones (the 7 MB
-first load; per-station files or a coarser sample) · new spots (Crissy Field, China Beach — data afternoons, see SPEC.md
-"Spots") · a real domain (`sfbayswims.com` → a `CNAME` file), a web manifest / icons / Open Graph image for links and
-home-screen installs · an email in `CONFIG.feedback.email` if bug reports should offer it.
-
-## Testing without a visible tab
-
-The engine renders on `requestAnimationFrame`, which stops in a hidden tab. Use `?frames=N&seed=1&offline=1` (renders N
-frames and freezes; `html.snapshot-ready`), `APP.app.stepFrames(n)` to advance, `APP.app.recompute()` for a synchronous
-physics run, and `await import('/js/engine/state.js')` for the app's own `set()`. Hooks: `APP.state`, `APP.live`,
-`APP.app` (the runtime), `APP.planner.{panel,timeline,legs,draw}`, `APP.frame.{cycle,button,presets,switchView}`. A tab
-hidden more than five minutes has its timers throttled to once a minute — reload before probing. `?persist=0` keeps
-frame probes from writing the shared `localStorage`.
-
-## Things that bit us (so they don't again)
-
-- `smoothPath` must not re-label the route's end points (a zero-length first leg appears).
-- The NOAA sunrise formula needs the Pacific day's noon as input, or dawn lands on the next day for morning times.
-- `reference()` returns `label`, not a `flood` boolean.
-- `applyWorldConfig` resets CONFIG on every spot switch: app patches go through the `overrides` list, never direct edits.
-- CO-OPS: 366-day cap per request, 403 on bursts (the tools sleep 1 s), occasional 504 (the refresh driver retries).
+Still requiring physical validation: Pi installation/services, Pico gestures and Wi-Fi reset, comitup setup,
+actual light sensor readings, Bay frame rate, cold boots, and a 48-hour soak. Follow README-frame.md.
+Defer new spots and features until those checks pass.

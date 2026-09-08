@@ -33,11 +33,6 @@ def clip_polyline(pts, bbox):
     """Clip a polyline to the bbox; returns pieces whose ends lie exactly on the boundary (or inside)."""
     s, w, n, e = bbox
     inside = lambda p: w <= p[0] <= e and s <= p[1] <= n
-    def cross(a, b):   # intersection of segment a-b with the bbox boundary, nearest to a
-        best = None
-        for t in _edge_hits(a, b, bbox):
-            if best is None or t < best: best = t
-        return best
     pieces, cur = [], []
     for i in range(len(pts)):
         p = pts[i]
@@ -96,7 +91,6 @@ def osm_land_polygons(bbox, cache=None):
         else: opens += clip_polyline(ch, bbox)
     # close open chains along the bbox boundary, walking CCW (keeps land on the left)
     opens = [o for o in opens if len(o) > 1]
-    starts = sorted(range(len(opens)), key=lambda i: perim(opens[i][0], bbox))
     used = [False] * len(opens)
     for i0 in range(len(opens)):
         if used[i0]: continue
@@ -104,7 +98,7 @@ def osm_land_polygons(bbox, cache=None):
         for _ in range(len(opens) + 1):
             used[i] = True; ring += opens[i]
             pe = perim(opens[i][-1], bbox)
-            cand = sorted([(perim(opens[j][0], bbox) - pe) % (2 * ((e - w) + (n - s))), j] for j in range(len(opens)) if j != i or True)
+            cand = sorted([(perim(opens[j][0], bbox) - pe) % (2 * ((e - w) + (n - s))), j] for j in range(len(opens)))
             _, j = cand[0]
             ring += corners_between(pe, perim(opens[j][0], bbox), bbox)
             if j == i0 or used[j]: break

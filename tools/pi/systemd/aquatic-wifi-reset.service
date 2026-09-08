@@ -1,5 +1,5 @@
 [Unit]
-Description=Aquatic Park: 'w' held 3 s on the button board forgets Wi-Fi (the setup hotspot returns)
+Description=Aquatic Park: eight-second button hold forgets Wi-Fi (the setup hotspot returns)
 After=NetworkManager.service
 
 [Service]

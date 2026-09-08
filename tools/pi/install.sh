@@ -24,9 +24,9 @@ if [ "$WITH_COMITUP" = 1 ]; then apt-get install -y -qq comitup >/dev/null || { 
 
 say "app → $APP (generated bundles are kept)"
 mkdir -p "$APP"
-rsync -a --delete --exclude .git --exclude venv --exclude __pycache__ --exclude .DS_Store \
+rsync -a --delete --exclude .git --exclude venv --exclude __pycache__ --exclude .DS_Store --exclude node_modules --exclude site --exclude test-results --exclude playwright-report \
   --exclude 'data/tides-*.json' --exclude 'data/currents-*.json' --exclude 'data/worlds/*/currents-*.json' --exclude 'data/frame.local.json' "$SRC/" "$APP/"
-rsync -a --ignore-existing "$SRC/data/" "$APP/data/"          # bundles from the checkout, never overwriting December's
+rsync -a --ignore-existing "$SRC/data/" "$APP/data/"          # bundles from the checkout, preserving the Pi's generated data
 chown -R "$USER_NAME:$USER_NAME" "$APP"; chmod +x "$APP/tools/serve.py" "$PI"/*.sh "$PI"/*.py
 
 say "system: timezone, autologin, no blanking, i2c, linger"
@@ -62,7 +62,7 @@ if [ "$WITH_COMITUP" = 1 ]; then
   systemctl enable --now comitup || true
 fi
 
-say "yearly bundles (every December morning until next year's exist)"
+say "validated bundle refresh (daily; network only when due)"
 sed -e "s|@USER@|$USER_NAME|g" -e "s|@APP@|$APP|g" "$PI/aquatic-bundles.cron" > /etc/cron.d/aquatic-bundles; chmod 644 /etc/cron.d/aquatic-bundles
 
 say "done — reboot. Then: journalctl -u aquatic-serve -u aquatic-ambient; systemctl --user status aquatic-kiosk"

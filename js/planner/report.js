@@ -22,7 +22,7 @@ export function buildReport({ b, notes = '', custom = null }) {
     `Spot ${state.world} · swim ${state.routeId} · start ${state.selectedTime != null ? when(state.selectedTime) : 'now'} · pace ${state.paceMps.toFixed(3)} m/s · units ${units.dist}/${units.temp}`,
     res ? `Physics: ${res.feasible ? `${Math.round(res.totalSeconds)} s` : 'swept'} · ${state.physics.ms.toFixed(1)} ms · at ${when(state.physics.at)}` : 'Physics: none yet',
     '', 'Data:',
-    `  water: ${d.waterTemp ? `${d.waterTemp.degF.toFixed(1)}°F ${d.waterTemp.approx ? '(climatology)' : ''} from ${d.waterTemp.source || '?'} at ${when(d.waterTemp.t)}` : 'none'} · ${line('waterTemp', 'fetch')}`,
+    `  water: ${d.waterTemp ? `${d.waterTemp.degF.toFixed(1)}°F ${d.waterTemp.source === 'climatology' ? '(climatology)' : ''} from ${d.waterTemp.source || '?'} at ${when(d.waterTemp.t)}` : 'none'} · ${line('waterTemp', 'fetch')}`,
     `  wind: ${d.wind ? `${d.wind.kn.toFixed(1)} kn from ${d.wind.source || '?'} at ${when(d.wind.t)}` : 'none'} · ${line('wind', 'fetch')}`,
     `  ${line('tides', 'tides live')} · ${line('currents', 'cove current live')}`,
     `  bundled predictions through ${isFinite(hz) ? when(hz) : 'unknown'}`,

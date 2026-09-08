@@ -4,10 +4,12 @@
 // swimming easy. If even a sprint can't hold the line the route is impossible: the profile ends there and a drift is
 // appended — a fight into the current while the reserve lasts, then tiring, then simply carried (the "swept away"
 // animation). The profile (t, x, y, heading, effort per sample) is what js/animate.js plays back.
+import { validPace } from './validate.js';
 import { CONFIG } from './config.js';
 
 /** One leg from A to B starting at t0Ms. `st.burst` is the route's sprint reserve (seconds), threaded through the legs. */
 export function integrateLeg(A, B, t0Ms, vs, field, opts = CONFIG.swim, st = { burst: opts.burstReserveS || 0 }) {
+  if (!validPace(vs) || !Number.isFinite(t0Ms)) throw new Error('Invalid swim pace or start');
   const L = Math.hypot(B.x - A.x, B.y - A.y), hdg0 = (Math.atan2(B.x - A.x, B.y - A.y) * 180 / Math.PI + 360) % 360;
   if (L < 0.01) return { meters: 0, seconds: 0, feasible: true, swept: false, samples: [{ s: 0, t: t0Ms, x: A.x, y: A.y, ok: true, hdg: hdg0, effort: 0 }] };
   const ux = (B.x - A.x) / L, uy = (B.y - A.y) / L, nx = -uy, ny = ux;
@@ -76,7 +78,7 @@ export function integrateRoute(route, t0Ms, vs, field, { sweep = true } = {}) {
     });
     t += r.seconds * 1000;
     if (r.swept) {
-      feasible = false;
+      feasible = false; sweptAt = (t - t0Ms) / 1000;
       if (sweep) {   // the drift's length is deliberately in screen time: sweptRealS real seconds at the sped-up tempo
         const P = r.samples[r.samples.length - 1], secs = (CONFIG.anim.sweptRealS || 0) * CONFIG.anim.speedup * (CONFIG.anim.sweptTempo || 1);
         sweptAt = (P.t - t0Ms) / 1000;
@@ -109,8 +111,8 @@ export function positionAt(profile, tau) {
 }
 
 /** A batch of candidate starts: { t, s, feasible, sweptAt } for each (the planner chunks the batches). */
-export function scanStarts(route, times, vs, field) {
-  return times.map(t => { const r = integrateRoute(route, t, vs, field, { sweep: false }); return { t, s: r.totalSeconds, feasible: r.feasible, sweptAt: r.profile.sweptAt }; });
+export function scanStarts(route, times, vs, field, { covers = () => true } = {}) {
+  return times.map(t => { const r = integrateRoute(route, t, vs, field, { sweep: false }); return { t, s: r.totalSeconds, feasible: r.feasible && covers(t, t + r.totalSeconds * 1000), sweptAt: r.profile.sweptAt }; });
 }
 /** The nearest slack of the reference current to t (within ±hours): { t, minutes } with minutes signed (+ = t is after the slack). */
 export function slackNear(field, t, hours = 7) {
@@ -127,11 +129,11 @@ export function slackNear(field, t, hours = 7) {
 }
 
 /** The coming hours in stepMin steps: the earliest feasible start and the fastest one. */
-export function scanWindows(route, t0Ms, vs, field, { hours = 48, stepMin = 30 } = {}) {
+export function scanWindows(route, t0Ms, vs, field, { hours = 48, stepMin = 30, covers = () => true } = {}) {
   let next = null, best = null;
   for (let off = 0; off <= hours * 60; off += stepMin) {
     const t = t0Ms + off * 60000, r = integrateRoute(route, t, vs, field, { sweep: false });
-    if (!r.feasible) continue;
+    if (!r.feasible || !covers(t, t + r.totalSeconds * 1000)) continue;
     if (!next) next = { t, s: r.totalSeconds };
     if (!best || r.totalSeconds < best.s) best = { t, s: r.totalSeconds };
   }

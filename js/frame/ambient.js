@@ -17,7 +17,8 @@ export function startAmbient() {
     try {
       const r = await fetch(c.url, { cache: 'no-store' }); if (!r.ok) throw new Error(r.status);
       const j = await r.json();
-      if (typeof j.lux === 'number' && isFinite(j.lux)) { lastSeen = Date.now(); target = luxToLevel(j.lux); }
+      if (!Number.isFinite(j.lux) || j.lux < 0 || !Number.isFinite(j.t) || Date.now() - j.t > 60000 || j.t > Date.now() + 5000) throw new Error('stale sensor reading');
+      lastSeen = j.t; target = luxToLevel(j.lux);
     } catch { if (Date.now() - lastSeen > 60000) target = 1; }
   }
   poll(); setInterval(poll, c.pollS * 1000);

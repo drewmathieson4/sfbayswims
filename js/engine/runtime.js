@@ -1,7 +1,7 @@
 // The engine's runtime: live-data refresh loops, the physics recompute, the animation loop, per-world mount/unmount.
 // boot.js starts it once and mounts worlds into it; apps read state, subscribe with on(), and hook the loop with onTick().
 import { CONFIG } from './config.js';
-import { state, set, on, bumpData, displayTime, physicsTime } from './state.js';
+import { state, set, on, bumpData, updateObservations, displayTime, physicsTime } from './state.js';
 import * as data from './data.js';
 import { TideSeries } from './tide.js';
 import { createDebug } from './debug.js';
@@ -18,7 +18,7 @@ import { createSwimmer } from './animate.js';
 export async function start({ canvas, mapEl, params, onResize, live, hintEl = null, playOptions = null, windowScan = null, followSwimmer = true }) {
   const offline = params.has('offline');
   const seed = params.has('seed') ? +params.get('seed') : null;
-  const frames = params.has('frames') ? +params.get('frames') : null;   // test hook: render N frames, then freeze
+  const frames = params.has('frames') && Number.isFinite(+params.get('frames')) ? Math.max(0, Math.min(3600, Math.floor(+params.get('frames')))) : null;   // test hook: render N frames, then freeze
   const H = 3600e3;
 
   // ---- shared series: the tide (bundle + cache + live) and the cove station's live current window ----
@@ -27,13 +27,18 @@ export async function start({ canvas, mapEl, params, onResize, live, hintEl = nu
   const refs = { tideRef: () => tide, liveCurrentsRef: () => currents };
   const debug = createDebug({ mapEl, params });
 
-  const year = new Date().getFullYear();
-  for (const y of [year, year + 1]) {                                   // this year's and next year's bundles: no restart at New Year
-    const b = await data.loadBundle(`tides-${y}.json`);
-    if (b?.hilo?.length) tide = TideSeries.merge(tide, new TideSeries({ hilo: b.hilo, station: b.station }));
+  const tideJobs = new Map();
+  async function loadTideYear(y) {
+    if (!tideJobs.has(y)) tideJobs.set(y, (async () => {
+      const b = await data.loadBundle(`tides-${y}.json`);
+      if (!b?.hilo?.length || !b.hilo.every(e => Number.isFinite(e.t) && Number.isFinite(e.h))) return false;
+      tide = TideSeries.merge(tide, new TideSeries({ hilo: b.hilo, station: b.station })); return true;
+    })());
+    return tideJobs.get(y);
   }
+  await loadTideYear(data.tzParts(physicsTime()).y);
   const cachedTide = data.cacheGet('tides');
-  if (cachedTide?.hilo) tide = TideSeries.merge(tide, new TideSeries(cachedTide));
+  if (Array.isArray(cachedTide?.hilo) && cachedTide.hilo.every(e => Number.isFinite(e.t) && Number.isFinite(e.h))) tide = TideSeries.merge(tide, new TideSeries(cachedTide));
   if (tide) bumpData({});
 
   let failures = 0, lastOk = Date.now();
@@ -49,20 +54,20 @@ export async function start({ canvas, mapEl, params, onResize, live, hintEl = nu
     catch (e) { console.warn('tides', e.message); noteFail('tides', e); }
   }
   async function refreshWaterTemp() {
-    try { const w = await data.fetchWaterTemp(); bumpData({ waterTemp: w }); state.data.sources.waterTemp = w.source; noteOk('waterTemp'); mark('waterTemp', { ok: true, source: w.source }); }
+    try { const w = await data.fetchWaterTemp(); updateObservations({ waterTemp: w }); state.data.sources.waterTemp = w.source; noteOk('waterTemp'); mark('waterTemp', { ok: true, source: w.source }); }
     catch (e) { console.warn(e.message); noteFail('waterTemp', e); await climatologyFallback(); }
   }
   async function climatologyFallback() {
     const clim = await data.loadBundle('watertemp-climatology.json'), v = data.climatologyTemp(clim, Date.now());
-    if (v != null) bumpData({ waterTemp: { t: Date.now(), degF: v, approx: true, source: 'climatology' } });
+    if (v != null) updateObservations({ waterTemp: { t: Date.now(), degF: v, approx: true, source: 'climatology' } });
   }
-  async function refreshWind() { try { const w = await data.fetchWind(); bumpData({ wind: w }); noteOk('wind'); mark('wind', { ok: true, source: w.source }); } catch (e) { console.warn('wind', e.message); noteFail('wind', e); } }
+  async function refreshWind() { try { const w = await data.fetchWind(); updateObservations({ wind: w }); noteOk('wind'); mark('wind', { ok: true, source: w.source }); } catch (e) { console.warn('wind', e.message); noteFail('wind', e); } }
   async function refreshCurrents() {
     const now = Date.now(), c = data.cacheGet('currents'); let series = c;
     if (!c || now - (c.fetchedAt || 0) > CONFIG.refresh.currentsH * H || !(c.samples?.length) || c.samples[c.samples.length - 1].t < now + 24 * H) {
       try { series = await data.fetchCurrents({ t0: now - 36 * H, t1: now + 36 * H }); data.cachePut('currents', series); noteOk('currents'); } catch (e) { console.warn('currents', e.message); noteFail('currents', e); }
     }
-    if (series?.samples?.length) { currents = new CurrentSeries(series); bumpData({}); if (series === c) mark('currents', { ok: true, source: 'cache', t: c.fetchedAt }); }
+    if (Array.isArray(series?.samples) && series.samples.length && series.samples.every(e => Number.isFinite(e.t) && Number.isFinite(e.kn) && Number.isFinite(e.dir))) { currents = new CurrentSeries(series); bumpData({}); if (series === c) mark('currents', { ok: true, source: 'cache', t: c.fetchedAt }); }
   }
   if (!offline) {
     refreshTides(); refreshWaterTemp(); refreshWind(); refreshCurrents();
@@ -92,7 +97,7 @@ export async function start({ canvas, mapEl, params, onResize, live, hintEl = nu
   let dirty = true, lastMinute = -1, recomputeTimer = null, scanTimer = null, scanMemo = new Map();
   const markDirty = () => { dirty = true; clearTimeout(recomputeTimer); recomputeTimer = setTimeout(() => { recomputeTimer = null; if (dirty) recomputeSafe(); }, 120); };
   const recomputeSafe = () => { try { recompute(); } catch (e) { console.error('recompute:', e.message, e.stack); reportError(e.message, 'recompute'); } };
-  on('selectedTime', markDirty); on('paceMps', markDirty); on('data', markDirty); on('routeId', markDirty);
+  on('selectedTime', markDirty); on('paceMps', markDirty); let physicsVersion = state.data.version; on('data', d => { if (physicsVersion !== d.version) { physicsVersion = d.version; markDirty(); } }); on('routeId', markDirty);
   on('icon', () => swimmer?.rebuild());
   const minuteTick = () => { if (state.selectedTime != null || state.swimming) return; const m = Math.floor(state.now / 60000); if (m !== lastMinute) { lastMinute = m; markDirty(); } };
   on('now', minuteTick);
@@ -117,15 +122,16 @@ export async function start({ canvas, mapEl, params, onResize, live, hintEl = nu
   }
   // the 48-h feasibility scan: only for infeasible routes, memoised per half hour (it is ~100 route integrations)
   function scheduleScan(r, res) {
+    clearTimeout(scanTimer); scanTimer = null;
     const w = world, mode = windowScan || w.world.ui?.windowScan || 'off';
     if (mode === 'off' || res.feasible) { if (state.windows) set({ windows: null }); return; }
     clearTimeout(scanTimer);
     scanTimer = setTimeout(() => {
       scanTimer = null;
-      if (world !== w) return;
+      if (world !== w || state.routeId !== r.id) return;
       const key = `${w.id}:${r.id}:${Math.floor(physicsTime() / 1800e3)}:${state.paceMps}:${state.data.version}`;
       let win = scanMemo.get(key);
-      if (!win) { const t0 = performance.now(); win = { ...scanWindows(r, physicsTime(), state.paceMps, w.field), routeId: r.id, ms: performance.now() - t0 }; scanMemo.set(key, win); if (scanMemo.size > 64) scanMemo.delete(scanMemo.keys().next().value); }
+      if (!win) { const t0 = performance.now(); win = { ...scanWindows(r, physicsTime(), state.paceMps, w.field, { covers }), routeId: r.id, ms: performance.now() - t0 }; scanMemo.set(key, win); if (scanMemo.size > 64) scanMemo.delete(scanMemo.keys().next().value); }
       set({ windows: win });
     }, 300);
   }
@@ -161,7 +167,30 @@ export async function start({ canvas, mapEl, params, onResize, live, hintEl = nu
     finally { frozen = true; document.documentElement.classList.add('snapshot-ready'); }
   }
 
-  /** When the predictions run out: the earliest end of the bundled currents and the tide extremes (ms), or Infinity. */
-  const horizon = () => Math.min(world?.horizon ?? Infinity, tide?.t1 ?? Infinity);
-  return { refs, mount, unmount, afterMount, recompute: recomputeSafe, stepFrames, onTick: fn => { tickFns.push(fn); }, setHint, horizon, get particles() { return particles; }, get swimmer() { return swimmer; }, get field() { return world?.field; } };
+  // Fetch only years needed by a plan/search, including enough time for its finish.
+  async function ensurePredictions(start, end) {
+    const w = world; if (!w) return;
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end < start || end - start > 370 * 86400e3) throw new Error('Invalid prediction range');
+    const previousTides = tideJobs.size;
+    for (let y = data.tzParts(start).y; y <= data.tzParts(end).y; y++) await loadTideYear(y);
+    const changed = await w.ensureCurrents(start, end);
+    if (world === w && (changed || tideJobs.size !== previousTides)) bumpData({});
+  }
+  const covers = (start, end) => !!world?.covers(start, end) && !!tide?.covers(start, end);
+  const horizon = (t = physicsTime()) => Math.min(world?.horizon(t) ?? -Infinity, tide?.t1 ?? -Infinity);
+  let coverageDay = '';
+  on('now', () => {
+    if (state.selectedTime != null) return;
+    const day = data.fmtYMD(state.now);
+    if (day === coverageDay) return;
+    coverageDay = day;
+    ensurePredictions(physicsTime(), physicsTime() + 7 * 86400e3).catch(e => reportError(e.message, 'predictions'));
+  });
+  let loadingPlan = 0;
+  on('selectedTime', async () => {
+    const token = ++loadingPlan;
+    await ensurePredictions(physicsTime(), physicsTime() + 7 * 86400e3);
+    if (token === loadingPlan) markDirty();
+  });
+  return { refs, mount, unmount, afterMount, recompute: recomputeSafe, stepFrames, onTick: fn => { tickFns.push(fn); }, setHint, horizon, covers, ensurePredictions, get particles() { return particles; }, get swimmer() { return swimmer; }, get field() { return world?.field; } };
 }

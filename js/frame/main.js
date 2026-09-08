@@ -1,4 +1,5 @@
 // The Frame: boot the engine with the presets, then the overlay, the cycle and the one button. See SPEC.md, Product A.
+import { paceFrom } from '../engine/validate.js';
 import { boot } from '../engine/boot.js';
 import { state, on } from '../engine/state.js';
 import { toggleShow } from '../engine/show.js';
@@ -13,6 +14,8 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 const presets = await loadPresets(params);
 const sw = loadSwitches(presets);                                           // { swimmer, overlay, streaks, world }
 html.style.setProperty('--current', `rgba(255, 255, 255, ${presets.streakAlpha})`);   // the streak ink; particles read it at creation
+html.style.setProperty('--hold-seconds', `${presets.holdSeconds}s`);
+html.style.setProperty('--fade-seconds', `${presets.fadeSeconds}s`);
 html.style.setProperty('--scrim', presets.labelScrim);                               // the vignette behind the top labels (0 = none)
 
 /** The presets as a CONFIG patch — re-applied after every world's config, so it must be idempotent. */
@@ -21,18 +24,18 @@ const overrides = [C => {
   C.anim.maxFps = presets.maxFps; C.anim.pauseS = presets.holdSeconds + presets.fadeSeconds;   // the finish: hold, then fade (css/frame.css)
   C.swimmer.icon = presets.icon; C.trace.crumbs = true;
   C.kiosk.reloadAt = presets.reloadAt; Object.assign(C.ambient, presets.ambient || {});
-  const m = /^(\d+):(\d\d)$/.exec(presets.pace || ''); if (m) C.paceMps = 100 / (+m[1] * 60 + +m[2]);
+  C.paceMps = paceFrom(presets.pace) ?? C.paceMps;
 }];
 /** Every swim lasts swimSeconds; a swept swim runs at the speed a full swim would and drifts for sweptSeconds. */
 const playOptions = (res, route) => {
-  const T = res.profile.totalSeconds, swept = res.profile.sweptAt, full = route.meters / state.paceMps;
+  const swept = res.profile.sweptAt, full = route.meters / state.paceMps;
   const realSeconds = swept == null ? presets.swimSeconds : Math.max(2, Math.min(presets.swimSeconds, presets.swimSeconds * swept / full));
   return { realSeconds, sweptRealSeconds: presets.sweptSeconds, crumbsPerSwim: presets.crumbsPerSwim?.[state.world] ?? 0 };
 };
 
 let busy = false, overlay = null;
 const b = await boot({
-  params, overrides,
+  params, overrides, preload: true,
   firstWorld: ids => sw.world && ids.includes(sw.world) ? sw.world : presets.view === 'alternate' ? ids[0] : presets.view,
   onActivate: world => { const t = world.world.title || 'Aquatic Park'; overlay?.setTitle(t); document.title = t; },
   runtime: { playOptions, windowScan: 'infeasible', followSwimmer: presets.streaksFollowSwimmer },
@@ -59,7 +62,7 @@ else { let t = null; const wake = () => { html.classList.remove('idle'); clearTi
 await b.activateFirst();
 cycle.start();
 { const { fmtDateYear: fmtDate } = await import('../engine/data.js');            // a notice when the bundled predictions are about to run out
-  const check = () => { const h = b.services.horizon(); b.services.setHint('horizon', isFinite(h) && (h - Date.now()) / 86400e3 < (APP.CONFIG.horizonWarnDays ?? 21) ? `predictions end ${fmtDate(h)} · update the frame` : ''); };
+  const check = () => { const h = b.services.horizon(); b.services.setHint('horizon', !isFinite(h) ? 'predictions unavailable · update the frame' : (h - Date.now()) / 86400e3 < (APP.CONFIG.horizonWarnDays ?? 21) ? `predictions end ${fmtDate(h)} · update the frame` : ''); };
   check(); setInterval(check, 3600e3); }
 window.APP.frame = { presets, cycle, button, switchView };
 if (state.kiosk) { try { (await import('./ambient.js')).startAmbient(); } catch (e) { console.warn('ambient', e.message); } }

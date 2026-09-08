@@ -1,3 +1,4 @@
+import { validPace } from './validate.js';
 // Number formatting shared by the apps, in the chosen units: times as m:ss / h:mm:ss, distances in yards + miles or
 // metres + kilometres, pace per 100 yd or 100 m, temperature in °F or °C. The frame uses yards and °F; the planner lets
 // the user choose (setUnits).
@@ -19,5 +20,5 @@ export const paceUnit = () => (units.dist === 'm' ? '/100 m' : '/100 yd');
 export const fmtPace = mps => (mps > 0.01 ? `${fmtMMSS(Math.round(per100() / mps))} ${paceUnit()}` : '—');
 export const fmtPaceOnly = mps => (mps > 0.01 ? fmtMMSS(Math.round(per100() / mps)) : '—');
 /** "1:45" in the current units → m/s, or null. */
-export const parsePace = s => { const m = /^(\d+):(\d\d)$/.exec(String(s).trim()); if (!m) return null; const sec = +m[1] * 60 + +m[2]; return sec > 0 ? per100() / sec : null; };
+export const parsePace = s => { const m = /^(\d+):(\d\d)$/.exec(String(s).trim()); if (!m) return null; const sec = +m[1] * 60 + +m[2]; const pace = per100() / sec; return +m[2] < 60 && validPace(pace) ? pace : null; };
 export const fmtTemp = degF => (units.temp === 'C' ? `${Math.round((degF - 32) * 5 / 9)}°C` : `${Math.round(degF)}°F`);

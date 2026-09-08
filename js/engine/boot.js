@@ -1,7 +1,9 @@
 // Boot the engine for a page: URL flags → CONFIG overrides → view sizing → the world index → the runtime → worlds.
 // An app calls boot(), builds its UI on `live` and state, then activateFirst(); switchWorld()/nextWorld() switch views.
+import { paceFrom } from './validate.js';
 import { CONFIG } from './config.js';
-import { state, set } from './state.js';
+import { tzParts } from './data.js';
+import { state, set, physicsTime } from './state.js';
 import { fitView, viewBoxOf } from './projection.js';
 import { loadIndex, loadWorld, buildWorld } from './world.js';
 import { applyShow } from './show.js';
@@ -17,7 +19,7 @@ const $ = id => document.getElementById(id);
  * @param dom         { mapEl, svg, photoSvg, photoImg, canvas, hintEl } (default: the standard ids)
  * @param runtime     extra options for runtime.start (playOptions, windowScan, followSwimmer)
  */
-export async function boot({ params = new URLSearchParams(location.search), overrides = [], firstWorld = null, onActivate = null, dom = null, runtime = {} } = {}) {
+export async function boot({ params = new URLSearchParams(location.search), overrides = [], firstWorld = null, onActivate = null, dom = null, runtime = {}, preload = false } = {}) {
 
   const html = document.documentElement;
   const flag = k => params.has(k) && params.get(k) !== '0';
@@ -27,22 +29,18 @@ export async function boot({ params = new URLSearchParams(location.search), over
 
   // CONFIG composition: defaults ← world.json config ← app overrides ← URL flags — re-applied after every world switch
   const urlOverrides = C => {
-    if (params.has('fps')) C.anim.maxFps = +params.get('fps');
-    if (params.has('kn')) C.debugCurrentKn = +params.get('kn');
+    if (params.has('fps')) { const fps = Number(params.get('fps')); if (Number.isFinite(fps)) C.anim.maxFps = Math.max(0, Math.min(120, fps)); }
+    if (params.has('kn')) { const kn = Number(params.get('kn')); if (Number.isFinite(kn)) C.debugCurrentKn = Math.max(-10, Math.min(10, kn)); }
     for (const k of ['swimmer', 'streaks', 'ui']) if (params.get(k) === '0' || flag('static')) C.show[k] = false;
   };
   const applyOverrides = C => { for (const f of [...overrides, urlOverrides]) f(C); };
   const applyCssVars = () => {
-    const vars = { '--photo-filter': CONFIG.photo.filter, '--route-done-w': CONFIG.route.doneWidth + 'px', '--swimmer-r': CONFIG.route.dotR, '--ui-scale': CONFIG.uiScale };
+    const vars = { '--photo-filter': CONFIG.photo.filter, '--ui-scale': CONFIG.uiScale };
     for (const [k, v] of Object.entries(vars)) html.style.setProperty(k, v);
   };
   applyOverrides(CONFIG);
   state.show = { ...CONFIG.show }; applyShow();
-  {
-    const p = params.get('pace');                        // "1:45" per 100 m, or m/s like "0.9"
-    const m = p && /^(\d+):(\d\d)$/.exec(p);
-    state.paceMps = m ? 100 / (+m[1] * 60 + +m[2]) : (+p || CONFIG.paceMps);
-  }
+  state.paceMps = paceFrom(params.get('pace')) ?? CONFIG.paceMps;
 
   // ---- DOM + view: one viewBox in metres shared by the photo SVG and the drawing SVG; canvases at device resolution ----
   const d = dom || { mapEl: $('map'), svg: $('svg'), photoSvg: $('photo'), photoImg: $('photo-img'), canvas: $('particles'), hintEl: $('hint') };
@@ -95,16 +93,16 @@ export async function boot({ params = new URLSearchParams(location.search), over
   async function switchWorld(id) {
     if (switching || !ids.includes(id) || id === state.world) return;
     switching = true;
-    try { state.routeByWorld[state.world] = state.routeId; const data = await loadWorld(id); services.unmount(); activate(data); }
+    try { state.routeByWorld[state.world] = state.routeId; const data = await loadWorld(id, tzParts(physicsTime()).y); services.unmount(); activate(data); await services.ensurePredictions(physicsTime(), physicsTime() + 7 * 86400e3); }
     catch (e) { console.error('world switch failed:', e.message, e.stack); }
     finally { switching = false; }
   }
   function nextWorld() { const i = ids.indexOf(state.world); return switchWorld(ids[(i + 1) % ids.length]); }
-  /** Mounts the first world (then the ?frames hook) and preloads the others so a switch is instant. */
+  /** Mounts the first world (then the ?frames hook); optionally preloads other worlds. */
   async function activateFirst() {
-    try { activate(await loadWorld(firstId)); services.afterMount(); }
+    try { activate(await loadWorld(firstId, tzParts(physicsTime()).y)); await services.ensurePredictions(physicsTime(), physicsTime() + 7 * 86400e3); await services.afterMount(); }
     catch (e) { console.error('app start failed:', e.message, e.stack); window.APP.startError = e; }
-    setTimeout(() => { for (const id of ids) if (id !== state.world) loadWorld(id).catch(e => console.warn('preload', id, e.message)); }, 5000);
+    if (preload || flag('preload')) setTimeout(() => { for (const id of ids) if (id !== state.world) loadWorld(id).catch(e => console.warn('preload', id, e.message)); }, 5000);
   }
   return { services, live, ids, index, dom: d, params, activateFirst, switchWorld, nextWorld };
 }

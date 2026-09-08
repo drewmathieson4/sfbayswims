@@ -8,8 +8,6 @@
   --panel: rgba(0, 0, 0, 0.55);
   --current: rgba(255, 255, 255, 0.2);   /* streak colour (read by js/particles.js) */
   --photo-filter: none;                  /* set from js/config.js photo.filter at boot */
-  --route-done-w: 1px;                   /* route.doneWidth */
-  --swimmer-r: 5;                        /* route.dotR */
   --ui-scale: 1;                         /* uiScale */
   --font: "Helvetica Neue", Helvetica, Inter, Arial, sans-serif;
 }
@@ -25,14 +23,12 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font); font-
 html.debug #debugcanvas { display: block; }
 #svg path, #svg circle { vector-effect: non-scaling-stroke; }
 
-/* swimmer: the swum path, the icon, its stroking arms, the comet tail and the breadcrumbs */
-#svg .route-done { fill: none; stroke: var(--ink); stroke-width: var(--route-done-w); stroke-linecap: round; stroke-linejoin: round; }
+/* swimmer: the swum path, the icon, its stroking arms, the breadcrumbs */
 #svg .icon .dot { fill: #fff; stroke: rgba(0, 0, 0, 0.5); stroke-width: 1px; }
 #svg .icon .beacon { fill: none; stroke: #fff; stroke-width: 1.5px; transform-box: fill-box; transform-origin: center; animation: beacon 2.4s ease-out infinite; }
 @keyframes beacon { from { transform: scale(0.6); opacity: 0.9; } to { transform: scale(3.2); opacity: 0; } }
 #svg .icon .body, #svg .icon .head { fill: var(--ink); stroke: var(--bg); stroke-width: 0.6px; }
 #svg .icon .arm { fill: none; stroke: var(--ink); stroke-width: var(--arm-w, 1px); stroke-linecap: round; }
-#svg .tail path { fill: none; stroke: var(--ink); stroke-linecap: round; stroke-linejoin: round; }
 #svg .crumbs circle { fill: var(--ink); opacity: 0.7; }
 
 /* switches (keys a / s) and the kiosk cursor */

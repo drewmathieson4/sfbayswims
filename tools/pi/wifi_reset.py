@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-"""Forget every saved Wi-Fi network when the button board sends `w` held for 3 s (● held 8 s), so comitup raises
+"""Forget every saved Wi-Fi network when the button board sends `w` key-down after ● is held 8 s, so comitup raises
 the "aquatic-park" setup hotspot again. Root (systemd). Watches only the keyboard named "Aquatic Buttons"."""
 import subprocess, time, sys
 try: import evdev
 except ImportError: print("python3-evdev missing — Wi-Fi reset disabled"); sys.exit(0)
-
-HOLD_S = 3.0
 
 def find_board():
     board = None
@@ -16,11 +14,11 @@ def find_board():
     return board
 
 def forget_wifi():
-    out = subprocess.run(["nmcli", "-t", "-f", "NAME,TYPE", "connection", "show"], capture_output=True, text=True).stdout
+    out = subprocess.run(["nmcli", "-t", "-f", "UUID,TYPE,NAME", "connection", "show"], capture_output=True, text=True).stdout
     for line in out.splitlines():
-        name, _, typ = line.rpartition(":")
+        uuid, typ, name = line.split(":", 2)
         if typ == "802-11-wireless" and not name.lower().startswith("comitup"):
-            subprocess.run(["nmcli", "connection", "delete", name]); print("forgot", name, flush=True)
+            subprocess.run(["nmcli", "connection", "delete", "uuid", uuid]); print("forgot", name, flush=True)
     subprocess.run(["systemctl", "restart", "comitup"], stderr=subprocess.DEVNULL)
 
 def main():
@@ -28,13 +26,10 @@ def main():
         board = find_board()
         if board is None: time.sleep(10); continue
         print("watching", board.name, flush=True)
-        down = None
         try:
             for ev in board.read_loop():
                 if ev.type != evdev.ecodes.EV_KEY or ev.code != evdev.ecodes.KEY_W: continue
-                if ev.value == 1: down = time.monotonic()
-                elif ev.value == 0: down = None
-                elif ev.value == 2 and down is not None and time.monotonic() - down >= HOLD_S: forget_wifi(); down = None
+                if ev.value == 1: forget_wifi()  # the Pico has already timed the eight-second hold
         except OSError:
             pass                                   # unplugged → rescan
         finally:

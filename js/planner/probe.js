@@ -7,7 +7,7 @@ import { KN } from '../engine/current.js';
 
 export function createProbe({ b }) {
   const map = b.dom.mapEl, tag = document.getElementById('probe'), live = b.live, vec = { x: 0, y: 0 };
-  let pinned = false;
+  let pinned = false, hideTimer = null;
   function show(clientX, clientY) {
     const v = state.view, field = live.field; if (!v || !field) return hide();
     const r = map.getBoundingClientRect(), px = clientX - r.left, py = clientY - r.top;
@@ -23,6 +23,6 @@ export function createProbe({ b }) {
   const drawing = () => document.documentElement.classList.contains('drawing');
   map.addEventListener('pointermove', e => { if (drawing()) return hide(); if (e.pointerType === 'mouse' && !pinned) show(e.clientX, e.clientY); });
   map.addEventListener('pointerleave', () => { if (!pinned) hide(); });
-  map.addEventListener('pointerdown', e => { if (drawing()) return; if (e.pointerType !== 'mouse') { pinned = !pinned || true; show(e.clientX, e.clientY); setTimeout(() => { pinned = false; hide(); }, 4000); } });
+  map.addEventListener('pointerdown', e => { if (drawing()) return; if (e.pointerType !== 'mouse') { pinned = true; clearTimeout(hideTimer); show(e.clientX, e.clientY); hideTimer = setTimeout(() => { pinned = false; hide(); }, 4000); } });
   return { show, hide };
 }

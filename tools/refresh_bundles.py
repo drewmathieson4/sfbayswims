@@ -1,59 +1,49 @@
 #!/usr/bin/env python3
-"""Keep the bundled predictions ahead of the calendar: for this year and next, regenerate any bundle that is missing or
-ends within --days (default 120) — tides (`precompute_tides.py`), the cove's current and the Bay's stations
-(`precompute_currents.py`). Idempotent; does nothing when everything reaches far enough. Meant for the quarterly GitHub
-Action (.github/workflows/bundles.yml) and for a laptop:
+"""Refresh invalid/missing current-year bundles and upcoming coverage. Shared by CI and Pi."""
+import argparse
+import datetime
+from pathlib import Path
+import subprocess
+import sys
+import time
+from _bundles import jobs, inspect, TZ
+from check_bundles import check
 
-    python3 tools/refresh_bundles.py            # do what's needed
-    python3 tools/refresh_bundles.py --dry-run  # say what would be done
-    python3 tools/refresh_bundles.py --days 200 # be early (fetch next year's now)
 
-Exit 1 when a fetch failed or a bundle still ends within --alarm days (default 45) — the loud signal."""
-import os, sys, json, time, datetime, subprocess, glob
-sys.path.insert(0, os.path.dirname(__file__))
-from _world import opt, flag, iopt
-ROOT = os.path.join(os.path.dirname(__file__), '..'); DATA = os.path.join(ROOT, 'data')
-DAYS, ALARM, DRY = iopt('--days', 120), iopt('--alarm', 45), flag('--dry-run')
-now = time.time() * 1000
-def end_of(path):
-    if not os.path.exists(path): return None
-    b = json.load(open(path))
-    if 'hilo' in b: return b['hilo'][-1]['t'] if b['hilo'] else None
-    if 'kn' in b: return b['t0'] + (len(b['kn']) - 1) * b['dtMs']
-    st = b.get('stations'); ends = []
-    for s in (st.values() if isinstance(st, dict) else []):
-        if 'samples' in s and s['samples']: ends.append(s['samples'][-1]['t'])
-        elif 'kn' in s: ends.append(s['t0'] + (len(s['kn']) - 1) * s['dtMs'])
-    return min(ends) if ends else None
-def fmt(t): return datetime.datetime.fromtimestamp(t / 1000).strftime('%Y-%m-%d') if t else 'missing'
-year = datetime.date.today().year
-# one job per bundle per year, grouped by kind; a kind is due when its furthest bundle doesn't reach DAYS ahead
-KINDS = {'tides': lambda y: (os.path.join(DATA, f'tides-{y}.json'), ['python3', 'tools/precompute_tides.py', str(y)]),
-         'cove':  lambda y: (os.path.join(DATA, f'currents-{y}.json'), ['python3', 'tools/precompute_currents.py', str(y)]),
-         'bay':   lambda y: (os.path.join(DATA, 'worlds', 'bay', f'currents-{y}.json'), ['python3', 'tools/precompute_currents.py', '--world', 'bay', str(y)])}
-years = (year, year + 1)
-jobs = [(kind, y) + KINDS[kind](y) for kind in KINDS for y in years]           # (kind, year, path, cmd)
-def needed():
-    out = []
-    for kind in KINDS:
-        mine = [j for j in jobs if j[0] == kind]
-        if max(end_of(j[2]) or 0 for j in mine) >= now + DAYS * 86400e3: continue
-        missing = [j for j in mine if not os.path.exists(j[2])]
-        out += missing or [mine[-1]]                                            # fetch the missing year(s), else refresh the latest
-    return out
-todo = needed(); failed = 0
-print('bundles reach: ' + ', '.join(f'{os.path.relpath(j[2], ROOT)} → {fmt(end_of(j[2]))}' for j in jobs if os.path.exists(j[2])))
-if not todo: print(f'nothing to do: everything reaches more than {DAYS} days ahead')
-for kind, y, path, cmd in todo:
-    print(('would run: ' if DRY else 'running: ') + ' '.join(cmd))
-    if DRY: continue
-    for attempt in range(3):
-        r = subprocess.run(cmd, cwd=ROOT)
-        if r.returncode == 0 and os.path.exists(path): break
-        time.sleep(30 * (attempt + 1))
-    else:
-        print(f'FAILED: {" ".join(cmd)}'); failed += 1
-latest = {kind: max(end_of(j[2]) or 0 for j in jobs if j[0] == kind) for kind in KINDS}
-late = {k: v for k, v in latest.items() if v < now + ALARM * 86400e3}
-if late: print('ALARM: ' + ', '.join(f'{k} ends {fmt(v)}' for k, v in late.items()))
-sys.exit(1 if (failed or late) and not DRY else 0)
+def needed(root, now, days):
+    year = datetime.datetime.fromtimestamp(now / 1000, TZ).year
+    todo = []
+    for current, future in zip(jobs(root, [year]), jobs(root, [year + 1])):
+        bounds, error = inspect(current)
+        if error: todo.append(current)
+        extra, future_error = inspect(future)
+        # Keep the current year healthy even if the next year's file already exists.
+        if future_error and (future[2].exists() or not bounds or bounds[1] < now + days * 86400000): todo.append(future)
+    return todo
+
+
+def main():
+    ap = argparse.ArgumentParser(); ap.add_argument('--days', type=int, default=120)
+    ap.add_argument('--alarm', type=int, default=45); ap.add_argument('--dry-run', action='store_true')
+    args = ap.parse_args(); root = Path(__file__).resolve().parent.parent
+    try: todo = needed(root / 'data', time.time() * 1000, args.days)
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        print(f'Cannot read bundle inventory: {exc}'); return 1
+    failed = False
+    for job in todo:
+        cmd = [sys.executable, *job[4]]
+        print(('would run: ' if args.dry_run else 'running: ') + ' '.join(cmd), flush=True)
+        if args.dry_run: continue
+        for attempt in range(3):
+            result = subprocess.run(cmd, cwd=root)
+            if result.returncode == 0 and inspect(job)[1] is None: break
+            if attempt < 2: time.sleep(30)
+        else: failed = True
+    if args.dry_run:
+        if not todo: print('No refresh needed')
+        return 0
+    healthy = check(root / 'data', args.alarm)
+    return 1 if failed or healthy else 0
+
+
+if __name__ == '__main__': raise SystemExit(main())

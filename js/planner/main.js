@@ -20,7 +20,20 @@ import { onError } from '../engine/health.js';
 
 const params = new URLSearchParams(location.search);
 const DEFAULTS = { units: { dist: 'yd', temp: 'F' }, streaks: true, swimmer: true, arrows: false, colour: true, tideLine: true, swim: { burst: true, reserveS: 60, floorMps: 0.25 } };
-export const settings = (() => { try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem('plan.settings') || '{}') }; } catch { return { ...DEFAULTS }; } })();
+export const settings = (() => {
+  const defaults = structuredClone(DEFAULTS);
+  try {
+    const saved = JSON.parse(localStorage.getItem('plan.settings') || '{}');
+    if (!saved || typeof saved !== 'object') return defaults;
+    for (const k of ['streaks', 'swimmer', 'arrows', 'colour', 'tideLine']) if (typeof saved[k] === 'boolean') defaults[k] = saved[k];
+    if (['yd', 'm'].includes(saved.units?.dist)) defaults.units.dist = saved.units.dist;
+    if (['F', 'C'].includes(saved.units?.temp)) defaults.units.temp = saved.units.temp;
+    if (typeof saved.swim?.burst === 'boolean') defaults.swim.burst = saved.swim.burst;
+    if (Number.isFinite(saved.swim?.reserveS)) defaults.swim.reserveS = Math.max(0, Math.min(600, saved.swim.reserveS));
+    if (Number.isFinite(saved.swim?.floorMps)) defaults.swim.floorMps = Math.max(0.05, Math.min(1, saved.swim.floorMps));
+  } catch { /* invalid storage uses defaults */ }
+  return defaults;
+})();
 export function saveSettings() { try { localStorage.setItem('plan.settings', JSON.stringify(settings)); } catch { /* private mode */ } }
 readPlan(params, settings);                                                   // units from a shared link win
 setUnits(settings.units);
@@ -54,7 +67,7 @@ const legs = createLegs({ b, settings });
 createStarts({ b });
 panel.onSetting(k => { if (k === 'colour') legs.render(); if (k === 'tideLine') timeline.render(); });
 bindKeys({ b, panel });
-panel.onUnits(() => hud.rerender());
+panel.onUnits(() => { hud.rerender(); legs.render(); });
 bindReport({ b, getCustom: () => draw.custom });
 const banner = document.getElementById('banner'), bannerText = document.getElementById('banner-text');   // a visible sign of a real error, with a way to report it
 const showBanner = e => { bannerText.textContent = `Something went wrong (${e.where ? e.where + ': ' : ''}${e.msg}). The page may still work; reload if not.`; banner.hidden = false; };
@@ -68,7 +81,7 @@ b.services.onTick((dt, force) => {                                            //
   if (!force && ++k % 8) return;
   const sw = b.services.swimmer; if (!sw) return;
   panel.setElapsed(sw.elapsed, CONFIG.anim.speedup * (state.tempo || 1), sw.speedMps);
-  if (state.swimming) timeline.render();
+  if (state.swimming) timeline.updatePlayhead();
 });
 await b.activateFirst();
 if (window.APP.startError) showBanner({ msg: window.APP.startError.message, where: 'start' });

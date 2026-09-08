@@ -21,7 +21,7 @@ export const state = {
   kiosk: false,
   still: false,            // ?still=1 → zero current (physics sanity)
   view: null,              // the fitted view (metres ↔ pixels), set by main.js on resize
-  data: { waterTemp: null, wind: null, version: 0, sources: {}, health: {} },   // version bumps on every live-data change → fields drop their cache; health: per source { ok, t, source | err }
+  data: { waterTemp: null, wind: null, version: 0, sources: {}, health: {} },   // version bumps on prediction/physics changes; observations keep it stable; health: per source { ok, t, source | err }
   physics: null,           // { at, byRoute: Map, ms }
 };
 
@@ -40,3 +40,5 @@ export function effectiveTime() { return state.selectedTime ?? state.now; }
 export function physicsTime() { return Math.floor(effectiveTime() / 60000) * 60000; }   // physics is recomputed per minute
 export function displayTime() { return state.swimAt ?? effectiveTime(); }              // what the picture shows: the swimmer's moment while swimming, else the selected one
 export function bumpData(patch) { set({ data: { ...state.data, ...patch, version: state.data.version + 1 } }); }
+
+export function updateObservations(patch) { set({ data: { ...state.data, ...patch } }); }

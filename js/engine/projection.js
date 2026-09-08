@@ -11,9 +11,6 @@ export function createProjection({ lat, lon }) {
   };
 }
 
-// SVG uses y-down; we flip once at write time.
-export function toSvg(p) { return [p.x, -p.y]; }
-
 /** Expand an extent {x0,x1,y0,y1} to a pixel aspect without cropping. */
 export function fitView(extent, pxW, pxH, dpr = 1) {
   const ew = extent.x1 - extent.x0, eh = extent.y1 - extent.y0;

@@ -35,7 +35,7 @@
     <section><h2>Swim</h2><div class="list" id="swims"></div><div class="seg dir" id="dir"></div>
       <div class="seg draw-tools"><button type="button" id="draw-start">draw a swim</button><button type="button" id="draw-seed">edit this swim</button></div>
       <div id="draw-bar" hidden>
-        <div class="row"><input id="draw-name" placeholder="name it"><select id="draw-mode"><option value="oneway">one way</option><option value="outback">out and back</option><option value="loop">loop</option></select></div>
+        <div class="row"><input maxlength="120" id="draw-name" placeholder="name it"><select id="draw-mode"><option value="oneway">one way</option><option value="outback">out and back</option><option value="loop">loop</option></select></div>
         <div class="row"><span class="unit" id="draw-count">tap the water to add points</span><span class="warn" id="draw-warn"></span></div>
         <div class="seg"><button type="button" id="draw-undo">undo</button><button type="button" id="draw-clear">clear</button><button type="button" id="draw-done">done</button><button type="button" id="draw-cancel">cancel</button></div>
       </div>
@@ -124,7 +124,7 @@
     Bay</strong>: NOAA's predictions for 43 current stations blended by distance; between stations it's a smooth blend,
     not hydrodynamics. The current shown top-right is the one honest number — the Opening (cove) or the Alcatraz station
     (Bay). <span class="approx">≈</span> marks a reading from a bundled prediction or a climatology rather than live data;
-    a live reading older than a few hours shows its age.</p>
+    a live reading older than a few hours shows its age. Image and map credits: <a href="SOURCES.md">sources</a>.</p>
     <h3>Data right now</h3>
     <p id="sources"></p>
     <p id="horizon"></p>

@@ -31,8 +31,7 @@ view title and the time, top-right `63°F · flood 1.2 kn · wind W 12 kn` with 
 swim plays — and nothing else.
 Online you can try it at `/frame/` (click, double-click, triple-click and hold on the picture, or the space bar).
 
-Parts, prices and links are in the plan (`~/.claude/plans/ok-perfect-this-is-glimmering-galaxy.md`,
-"Parts list"). Prototype on the Pi 4 you own; the final board is decided by the frame-rate test (§5).
+Prototype on the Pi 4 you own; the final board is decided by the frame-rate test (§5). The old external Claude plan is historical design context, not a current parts list.
 
 ## 1. Flash the Pi
 
@@ -56,12 +55,12 @@ Parts, prices and links are in the plan (`~/.claude/plans/ok-perfect-this-is-gli
    | `aquatic-serve` (system) | `tools/serve.py` — threaded static server on `127.0.0.1:8000` (assets revalidate, the sensor file never caches), serves the light-sensor file as `/ambient.json` |
    | `aquatic-kiosk` (user) | Chromium `--kiosk --app=http://127.0.0.1:8000/frame/index.html?kiosk=1`, `Restart=always`; started by the compositor's autostart once Wayland is up |
    | `aquatic-ambient` (system) | `tools/pi/ambient.py` — VEML7700/BH1750 on I²C → `/run/aquatic/ambient.json` every 2 s; exits quietly if there is no sensor |
-   | `aquatic-wifi-reset` (system) | `tools/pi/wifi_reset.py` — `w` held 3 s from the "Aquatic Buttons" board (● held 8 s) forgets saved Wi-Fi so the setup hotspot returns; it ignores every other keyboard |
+   | `aquatic-wifi-reset` (system) | `tools/pi/wifi_reset.py` — `w` key-down after the Pico’s eight-second hold from the "Aquatic Buttons" board (● held 8 s) forgets saved Wi-Fi so the setup hotspot returns; it ignores every other keyboard |
 
    The installer never overwrites `data/frame.local.json` — this frame's own presets (§3).
 
-   Plus `/etc/cron.d/aquatic-bundles` (every December morning until next year's tide/current
-   bundles exist; re-running the installer never overwrites bundles the frame generated) and, with
+   Plus `/etc/cron.d/aquatic-bundles` (daily at 03:00, validating and refreshing missing, invalid, or due tide/current
+   bundles; re-running the installer never overwrites bundles the frame generated) and, with
    `comitup` available, the captive-portal hotspot (§4). The installer sources the system labwc
    autostart from the user's, so the desktop session stays intact; only its screen blanker is stopped.
    Option: `--no-comitup`. (SSH is enabled by the Imager settings; that's the remote-fix path.)
@@ -82,8 +81,7 @@ Parts, prices and links are in the plan (`~/.claude/plans/ok-perfect-this-is-gli
 ## 2. The button (Pico as a USB keyboard)
 
 Flash CircuitPython on a Pico / Pico 2, copy the `adafruit_hid` library folder into `/lib`, then
-copy `tools/pi/pico/code.py` and `boot.py` to the drive. Wire the button (● GP4) to GND; ◀ GP2 and ▶ GP3 may
-stay wired but the frame ignores them. The Pico only reports the button: `b` is held while ● is pressed (plus `w`
+copy `tools/pi/pico/code.py` and `boot.py` to the drive. Wire the button (● GP4) to GND; GP2 and GP3 are unused and no longer read by the firmware. The Pico only reports the button: `b` is held while ● is pressed (plus `w`
 after 8 s). The gestures are decoded in the browser (`js/frame/button.js`), so timings change with an app
 update, not a reflash:
 
@@ -165,5 +163,10 @@ rsync -a --exclude venv --exclude .git ./ pi@aquatic.local:~/aquatic-park/
 ssh pi@aquatic.local 'sudo bash ~/aquatic-park/tools/pi/install.sh'    # re-syncs /opt and restarts services
 ```
 
-Bundles for next year appear by themselves in December (`tools/pi/refresh-bundles.sh`); to
-regenerate by hand run the bundle commands in the main README's "Rebuilding the data".
+The daily `tools/pi/refresh-bundles.sh` runs the same validated driver as CI. It fetches only missing/invalid or due bundles. For manual regeneration see DATA.md.
+
+## Maintenance validation
+
+Run `npm test` and `npm run test:browser` on the development machine. Node packages are test-only and excluded from the Pi installer. The sensor timestamp must be fresh (within 60 seconds); stale files restore full brightness. `holdSeconds` and `fadeSeconds` control both playback and CSS. The Pico owns the eight-second Wi-Fi hold; the Pi resets on key-down with no additional delay.
+
+Physical checks remain required: service startup, sensor readings against room light, single/double/triple/hold gestures, eight-second Wi-Fi reset and reconnection, 30 fps Bay view, ten cold boots, and the 48-hour closed-frame soak. These cannot be certified by desktop browser tests.

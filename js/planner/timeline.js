@@ -11,7 +11,7 @@ const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag)
 
 export function createTimeline({ b, settings }) {
   const svg = document.getElementById('tl'), box = document.getElementById('timeline'), live = b.live;
-  let W = 600, Hh = 76, t0 = 0, dragging = false;
+  let W = 600, Hh = 76, t0 = 0, dragging = false, head = null, headTip = null, nowLine = null;
   const midnight = t => { const p = tzParts(t); return localToEpoch(p.y, p.mo, p.d, 0, 0); };
   const x = t => ((t - t0) / SPAN) * W, tAt = px => t0 + (px / W) * SPAN;
   const snap = t => Math.round(t / (CONFIG.scrub.stepMin * 60000)) * CONFIG.scrub.stepMin * 60000;
@@ -57,11 +57,18 @@ export function createTimeline({ b, settings }) {
       for (let i = 0; i <= M; i++) { const h = ts.heightAt(t0 + (i / M) * SPAN); hs[i] = h ?? 0; if (h != null) { lo = Math.min(lo, h); hi = Math.max(hi, h); } }
       if (hi > lo) { let d = ''; for (let i = 0; i <= M; i++) d += `${i ? 'L' : 'M'}${((i / M) * W).toFixed(1)} ${(bottom - ((hs[i] - lo) / (hi - lo)) * (bottom - top)).toFixed(1)}`; el('path', { class: 'height', d }, svg); }
     }
-    // now, and the playhead (the selected start; the swimmer's moment during a preview)
-    const nowX = x(state.now); if (nowX >= 0 && nowX <= W) el('line', { class: 'now', x1: nowX, x2: nowX, y1: top, y2: bottom }, svg);
-    const hx = x(state.swimming ? displayTime() : effectiveTime());
-    el('line', { class: 'head', x1: hx, x2: hx, y1: top - 2, y2: bottom + 2 }, svg);
-    el('polygon', { class: 'head-t', points: `${hx - 5},${top - 8} ${hx + 5},${top - 8} ${hx},${top - 2}` }, svg);
+    nowLine = el('line', { class: 'now', y1: top, y2: bottom }, svg);
+    head = el('line', { class: 'head', y1: top - 2, y2: bottom + 2 }, svg);
+    headTip = el('polygon', { class: 'head-t' }, svg);
+    updatePlayhead();
+  }
+  function updatePlayhead() {
+    if (!head) return;
+    const hx = x(state.swimming ? displayTime() : effectiveTime()), nx = x(state.now), top = 14;
+    head.setAttribute('x1', hx); head.setAttribute('x2', hx);
+    headTip.setAttribute('points', `${hx - 5},${top - 8} ${hx + 5},${top - 8} ${hx},${top - 2}`);
+    nowLine.setAttribute('x1', nx); nowLine.setAttribute('x2', nx);
+    nowLine.style.display = nx >= 0 && nx <= W ? '' : 'none';
   }
   // drag / tap sets the start (snapped to 5 min)
   box.addEventListener('pointerdown', e => { dragging = true; box.setPointerCapture(e.pointerId); move(e); });
@@ -70,8 +77,9 @@ export function createTimeline({ b, settings }) {
   box.addEventListener('pointerup', up); box.addEventListener('pointercancel', up);
   function move(e) { const r = box.getBoundingClientRect(), t = tAt(Math.max(0, Math.min(r.width, e.clientX - r.left))); set({ selectedTime: Math.abs(t - state.now) < CONFIG.scrub.snapNowMin * 60000 ? null : t }); }
   new ResizeObserver(render).observe(box);
-  on('selectedTime', render); on('physics', render); on('routeId', render); on('world', render); on('data', render);
+  on('selectedTime', render); on('physics', render); on('routeId', render); on('world', render);
+  let version = state.data.version; on('data', d => { if (version !== d.version) { version = d.version; render(); } });
   on('now', () => { if (Math.floor(state.now / 60000) !== Math.floor((state.now - 1000) / 60000)) render(); });
   on('swimming', render);
-  return { render };
+  return { render, updatePlayhead };
 }
