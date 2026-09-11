@@ -78,7 +78,7 @@ export function createStationField({ geometry, stations, seriesById, tideRef, li
   /** What the HUD shows: the reference station's own reading. */
   function reference(t) {
     prepare(t);
-    return { kn: ctx.kn, label: ctx.kn < cv.slackKn ? 'SLACK' : (ctx.flood ? 'FLOOD' : 'EBB'), approx: ctx.approx, source: ctx.source, where: fieldCfg.referenceLabel || '' };
+    return { kn: ctx.kn, signedKn: (ctx.u * fx + ctx.v * fy) / KN, label: ctx.kn < cv.slackKn ? 'SLACK' : (ctx.flood ? 'FLOOD' : 'EBB'), approx: ctx.approx, source: ctx.source, where: fieldCfg.referenceLabel || '' };
   }
   return { prepare, sampleInto, sample, reference, ctx, stations: S, isWater: (x, y) => isWater(geometry, x, y) };
 }

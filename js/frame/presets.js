@@ -4,7 +4,7 @@ import { paceFrom } from '../engine/validate.js';
 import { dataUrl } from '../engine/paths.js';
 
 const DEFAULTS = {
-  view: 'cove', alternateEveryMin: 0, swimmer: true, overlay: true, streaks: true, pace: '1:45',
+  view: 'cove', alternateEveryMin: 0, swimmer: false, overlay: true, streaks: true, pace: '1:45',
   swimSeconds: 60, holdSeconds: 1, fadeSeconds: 1, restSeconds: 2, sweptSeconds: 6, skipInfeasible: false, streaksFollowSwimmer: true,
   routes: {}, crumbsPerSwim: {}, icon: 'glyph', streakAlpha: 0.18, labelScrim: 0.45, maxFps: 30,
   quietHours: null, persistSwitches: true, resetDaily: false, ambient: {}, reloadAt: '04:00',
@@ -31,7 +31,7 @@ export async function loadPresets(params) {
   return p;
 }
 
-const KEY = 'frame.switches';
+const KEY = 'frame.controls.v2';
 const today = () => new Date().toDateString();
 /** The switches to boot with: what was stored (unless resetDaily and the day has turned), else the presets. */
 export function loadSwitches(p) {
@@ -40,7 +40,7 @@ export function loadSwitches(p) {
   try {
     const s = JSON.parse(localStorage.getItem(KEY) || 'null');
     if (!s || (p.resetDaily && s.day !== today())) return fromPresets;
-    for (const key of ['swimmer', 'overlay', 'streaks']) if (typeof s[key] === 'boolean') fromPresets[key] = s[key];
+    // Always start in the configured default mode; only remember the view.
     if (typeof s.world === 'string') fromPresets.world = s.world;
     return fromPresets;
   } catch { return fromPresets; }

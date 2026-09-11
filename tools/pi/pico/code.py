@@ -5,7 +5,7 @@
 #   ● GP4 — momentary button to GND (internal pull-up)
 #   ● press … release       → `b` held for the duration (the frame decodes taps and the 0.6-s hold)
 #   ● held ≥ 8 s            → `w` pressed as well, until release (tools/pi/wifi_reset.py: forget Wi-Fi → the setup hotspot)
-import time, board, digitalio, usb_hid
+import time, board, digitalio, usb_hid, rotaryio
 from adafruit_hid.keyboard import Keyboard
 from adafruit_hid.keycode import Keycode
 
@@ -13,6 +13,9 @@ kbd = Keyboard(usb_hid.devices); kbd.release_all()
 def pin(p):
     d = digitalio.DigitalInOut(p); d.direction = digitalio.Direction.INPUT; d.pull = digitalio.Pull.UP; return d
 SEL = pin(board.GP4)
+# Quadrature encoder A/B on GP2/GP3, common to GND; swap A/B to reverse direction.
+encoder = rotaryio.IncrementalEncoder(board.GP2, board.GP3)
+position = encoder.position
 DEBOUNCE, HOLD_W = 0.02, 8.0
 
 class Debounced:
@@ -27,6 +30,12 @@ sel = Debounced(SEL)
 down_at, w_sent = None, False
 while True:
     now = time.monotonic()
+    new_position = encoder.position
+    delta = new_position - position
+    position = new_position
+    for _ in range(min(abs(delta), 32)):
+        key = Keycode.RIGHT_ARROW if delta > 0 else Keycode.LEFT_ARROW
+        kbd.press(key); kbd.release(key)
     if sel.update():
         if sel.state: kbd.press(Keycode.B); down_at, w_sent = now, False
         else:

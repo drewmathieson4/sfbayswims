@@ -10,6 +10,7 @@ import { CurrentSeries } from './current.js';
 import { createParticles } from './particles.js';
 import { integrateRoute, scanWindows } from './swim.js';
 import { createSwimmer } from './animate.js';
+import { createFramePacer } from './frame-pacer.js';
 
 /**
  * playOptions(res, route) → opts for swimmer.setRoute (the frame scales every swim); windowScan 'infeasible' | 'off' overrides
@@ -137,14 +138,17 @@ export async function start({ canvas, mapEl, params, onResize, live, hintEl = nu
   }
 
   // ---- the loop ----
-  let last = performance.now(), forceRender = false, frozen = false, loopErrors = 0, acc = 0, streaksWere = true;
+  const metrics = params.get('perf') === '1' ? { callbacks: 0, frames: 0, workMs: 0 } : null;
+  const paceFrame = createFramePacer();
+  let forceRender = false, frozen = false, loopErrors = 0, streaksWere = true;
   const tickFns = [];                                    // the apps' per-frame hooks fn(dt, force): the rail's elapsed/speed live there
   function tick(ts) {
-    const dt = Math.min(0.05, (ts - last) / 1000); last = ts;
-    const maxFps = CONFIG.anim.maxFps || 0;
-    if (maxFps > 0) { acc += dt; if (acc < 1 / maxFps) { requestAnimationFrame(tick); return; } }
-    const step = maxFps > 0 ? acc : dt; acc = 0;
+    if (metrics) metrics.callbacks++;
+    const step = paceFrame(ts, CONFIG.anim.maxFps || 0);
+    if (step == null) { requestAnimationFrame(tick); return; }
+    const workStart = metrics ? performance.now() : 0;
     try { tickBody(step); } catch (e) { if (loopErrors++ < 3) { console.error('loop error:', e.message, e.stack); reportError(e.message, 'loop'); } }
+    if (metrics) { metrics.frames++; metrics.workMs += performance.now() - workStart; }
     requestAnimationFrame(tick);
   }
   function tickBody(dt) {
@@ -192,5 +196,5 @@ export async function start({ canvas, mapEl, params, onResize, live, hintEl = nu
     await ensurePredictions(physicsTime(), physicsTime() + 7 * 86400e3);
     if (token === loadingPlan) markDirty();
   });
-  return { refs, mount, unmount, afterMount, recompute: recomputeSafe, stepFrames, onTick: fn => { tickFns.push(fn); }, setHint, horizon, covers, ensurePredictions, get particles() { return particles; }, get swimmer() { return swimmer; }, get field() { return world?.field; } };
+  return { refs, mount, unmount, afterMount, recompute: recomputeSafe, stepFrames, onTick: fn => { tickFns.push(fn); }, metrics, setHint, horizon, covers, ensurePredictions, get particles() { return particles; }, get swimmer() { return swimmer; }, get field() { return world?.field; } };
 }

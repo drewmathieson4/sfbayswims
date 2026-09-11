@@ -1,7 +1,7 @@
 {
  "view": "cove",
  "alternateEveryMin": 0,
- "swimmer": true,
+ "swimmer": false,
  "overlay": true,
  "streaks": true,
  "pace": "1:45",

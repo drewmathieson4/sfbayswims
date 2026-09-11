@@ -33,3 +33,26 @@ html.fade-out #fade { opacity: 1; transition: opacity 0.5s; }
 #dim, #warm { position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.4s linear; }
 #dim { background: #000; z-index: 50; }
 #warm { background: #ff9a3c; mix-blend-mode: multiply; z-index: 51; }
+
+/* Photograph mode removes every annotation and animated layer, including hints. */
+html.photograph #svg, html.photograph #particles,
+html.photograph .label, html.photograph #scrim { display: none !important; }
+#conditions { width: max-content; margin-left: auto; }
+#current-wave { display: block; width: 0; height: auto; margin: 0.7em 0 0 auto; overflow: visible; }
+#current-wave path { fill: none; stroke: currentColor; stroke-width: 1; }
+#current-wave .wave-axis { opacity: 0.25; }
+#current-wave .wave-marker { opacity: 0.65; }
+#current-wave circle, #current-wave text { fill: currentColor; }
+#current-wave text { font-size: 8px; letter-spacing: 0.06em; opacity: 0.65; }
+
+/* Bay's pale shoreline needs more contrast beneath the date and time. */
+html[data-frame-world="bay"] #title,
+html[data-frame-world="bay"] #clock {
+  color: #fff;
+  font-weight: 500;
+  text-shadow: 0 1px 2px #000, 0 0 6px rgba(0, 0, 0, 0.95), 0 0 14px rgba(0, 0, 0, 0.8);
+}
+html[data-frame-world="bay"] #scrim {
+  background: radial-gradient(ellipse 560px 160px at top left, rgba(0, 0, 0, 0.5), transparent),
+    linear-gradient(to bottom, rgba(0, 0, 0, var(--scrim, 0.45)) 0, rgba(0, 0, 0, 0) 18vh);
+}

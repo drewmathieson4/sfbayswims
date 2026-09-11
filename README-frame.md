@@ -11,9 +11,11 @@
 >   worlds, streaks, swimmer), `css/engine.css`, `data/worlds/`, `data/*.json` bundles. Tunables for the frame belong in
 >   `data/frame.json`, not in the engine.
 > - **Not yours:** `index.html`, `css/planner.css`, `js/planner/` — the website.
-> - **What has never run on hardware:** all of `tools/pi/`. Order of work: §1 flash and install → check the four
->   services → §2 flash the Pico (it now only holds `b` while the button is pressed; the browser decodes gestures) →
->   §5 the frame-rate test in the Bay view (`?fps=30`) → §4 comitup on the Trixie image → §6 the soak test.
+> - **Current build decision (September 8, 2026):** use the existing Pi 4 and one detented endless encoder with
+>   a built-in push button, wired directly to Pi GPIO. No Pico or separate button is required. The GPIO input
+>   service still needs implementation and hardware testing; the Pico instructions below are an optional alternative.
+>   The manually configured frame server and Chromium kiosk have run on the Pi; this does not validate the
+>   legacy installer, sensor, or Wi-Fi provisioning. Complete controls, §5 performance, §4 Wi-Fi, then §6 soak testing.
 > - **Test the frame without hardware** at `http://localhost:8000/frame/` (`python3 tools/serve.py 8000`): click, double-
 >   click, triple-click, hold on the picture or the space bar; `?seed=1&offline=1&persist=0` for a deterministic,
 >   network-free, non-persisting run; `APP.frame.{cycle,button,presets,switchView}` in the console.
@@ -21,17 +23,22 @@
 >   git branch -d <branch> && git push`. Never merge unasked.
 
 A wall-hung picture frame: a matte 15.6" laptop panel behind a mat, a Raspberry Pi hidden on the
-back, one cord to the wall, one hidden button under the bottom rail, a light sensor so the
+back, one cord to the wall, one endless rotary dial with tactile detents and a built-in push button under the bottom rail, a light sensor so the
 picture dims with the room. From across the room it should pass for a framed aerial photo.
 
-The frame runs the **Frame app** (`frame/index.html`, `js/frame/`, see SPEC.md Product A): the view's swims
-play in turn, each starting from *now* and scaled to one minute; while a swim plays the time, the streaks and
-the current reading follow the swimmer; between swims the water is simply now. Museum labels only — top-left the
-view title and the time, top-right `63°F · flood 1.2 kn · wind W 12 kn` with `Alcatraz · 1:12` beneath it while a
-swim plays — and nothing else.
-Online you can try it at `/frame/` (click, double-click, triple-click and hold on the picture, or the space bar).
+The frame runs the **Frame app** (`frame/index.html`, `js/frame/`). It starts with live currents and
+quiet labels, with no swimmer. The dial moves time backward/forward and leaves it fixed until a
+single press restores now. Double press enters/exits swimmer mode; the dial chooses a preloaded
+swim, repeated at the selected departure time. Triple press shows only the photograph; another
+triple restores the previous mode. Hold switches views while preserving time and mode.
+The clock always shows the date. While browsing time with the dial, it adds an offset such as `+3H` or `−15M`; single press clears the offset.
+A small forecast beneath the conditions shows the selected point in the ebb/flood cycle (±6 hours).
+Online, use left/right arrow keys or the mouse wheel as the dial, and click/space/B as the button.
 
 Prototype on the Pi 4 you own; the final board is decided by the frame-rate test (§5). The old external Claude plan is historical design context, not a current parts list.
+
+The current consolidated purchase checklist is [docs/frame-buy-list.md](docs/frame-buy-list.md).
+It supersedes the older bare-panel and 12 V power arrangement: use a complete monitor and separate external USB-C supplies.
 
 ## 1. Flash the Pi
 
@@ -78,22 +85,63 @@ Prototype on the Pi 4 you own; the final board is decided by the frame-rate test
    `chrome://gpu` (plug in a keyboard and press `Esc` to leave kiosk briefly) should show
    *Canvas: Hardware accelerated*.
 
-## 2. The button (Pico as a USB keyboard)
+## 2. The dial and button
+
+### Selected build: direct Pi 4 GPIO connection
+
+Use a panel-mount quadrature encoder with tactile detents, continuous rotation, and a normally open push switch.
+The encoder and its built-in switch connect to the Pi 4 GPIO header. Buy a matching knob and mounting/wiring
+hardware; omit the Pico, its USB cable, and a separate push button from the recommended parts.
+
+Drew selected black metal for the knob. Recommended control parts (September 8, 2026; not yet ordered):
+
+- [Adafruit Rotary Encoder + Extras, #377](https://www.adafruit.com/product/377): $4.50,
+  continuous rotation with tactile detents and a built-in push switch; 6 mm D shaft.
+- [Adafruit black anodized aluminum knob, #5527](https://www.adafruit.com/product/5527):
+  20 mm diameter, 6 mm bore with set screw, textured sides and a white triangle marking. Listed at $2.95
+  and available through [DigiKey](https://www.digikey.com/en/products/detail/adafruit-industries-llc/5527/16653407)
+  when checked; out of stock directly at Adafruit. Requires a 2 mm hex key (not included).
+
+To consolidate shipping, buy the encoder through
+[DigiKey too](https://www.digikey.com/en/products/detail/adafruit-industries-llc/377/7902287)
+(1528-2438-ND, $4.50, listed in stock September 8, 2026). The knob is 1528-5527-ND.
+For the planned ambient dimming, the same order can include
+[VEML7700 board #4162](https://www.digikey.com/en/products/detail/adafruit-industries-llc/4162/9997696)
+(1528-2891-ND, $4.95) and
+[QT-to-female GPIO cable #4397](https://www.digikey.com/en/products/detail/adafruit-industries-llc/4397/10824270)
+(1528-4397-ND, $0.95, 150 mm). Both were listed in stock; these four items total $13.35 before shipping and tax.
+Confirm the combined shipping charge and delivery date at checkout. This covers controls and sensing, not the
+display, power, or final frame hardware. Drew already has a breadboard and jumper wires, and can borrow a friend's
+soldering iron; confirm access to a 2 mm hex key and heat-shrink tubing for assembly.
+
+The shaft and bore are compatible; final mounting still needs measurement. Leave clearance beneath the knob
+for the push switch to travel, and use a recessed mount or thin bracket if the wooden rail is too thick for
+the encoder's threaded bushing. Wiring and mounting materials are additional to these two control parts.
+
+A small background service on the Pi will read rotation and switch press/release events and pass them to the
+frame's existing controls. This service is planned, not implemented or installed. Choose the exact encoder before
+finalizing GPIO assignments and wiring; preserve pins needed by the ambient light sensor. Validate detents,
+direction, fast turns, all button gestures, and automatic startup with the physical control. The legacy eight-second
+Wi-Fi reset below currently depends on Pico firmware and also needs adaptation for this build.
+
+### Optional alternative: Pico as a USB keyboard
 
 Flash CircuitPython on a Pico / Pico 2, copy the `adafruit_hid` library folder into `/lib`, then
-copy `tools/pi/pico/code.py` and `boot.py` to the drive. Wire the button (● GP4) to GND; GP2 and GP3 are unused and no longer read by the firmware. The Pico only reports the button: `b` is held while ● is pressed (plus `w`
+copy `tools/pi/pico/code.py` and `boot.py` to the drive. Wire the button (● GP4) to GND; connect a quadrature encoder A/B to GP2/GP3 and its common to GND. The encoder sends left/right arrows (swap A/B if reversed). The Pico reports the button: `b` is held while ● is pressed (plus `w`
 after 8 s). The gestures are decoded in the browser (`js/frame/button.js`), so timings change with an app
 update, not a reflash:
 
 | Gesture | Timing | Does |
 |---|---|---|
-| click | press < 0.4 s | swimmer on / off (off = the water shows now) |
-| double-click | taps within 0.3 s | overlay (the three labels) on / off |
-| triple-click | | tidal movement (the streaks) on / off |
+| click | press < 0.4 s | exit swimmer/photo mode and restore live time |
+| double-click | taps within 0.3 s | enter/exit swimmer mode at the selected time |
+| triple-click | | photograph only / restore previous mode |
 | hold | 0.6 s — fires while still pressed | switch view (cove ↔ Bay) through black |
 | hold 8 s | | forget Wi-Fi (`w` → `wifi_reset.py`; the hotspot returns) |
 
-The switches and the view survive the nightly reload (`localStorage`; `persistSwitches` in the presets).
+Only the view survives the nightly reload (`localStorage`; `persistSwitches` in the presets).
+The frame starts in its configured default mode. Slow dial turns step 5 minutes, faster turns 15 or 60 minutes.
+In swimmer mode each detent changes one preset; in photograph mode the dial does nothing.
 
 `boot.py` names the board "Aquatic Buttons" and hides the CIRCUITPY drive so the Pi only ever sees
 a keyboard; hold ● while plugging the Pico in to get the drive back for editing (the serial console
@@ -101,11 +149,10 @@ stays on for debugging). `lsusb` on the Pi lists it as a keyboard.
 
 ## 3. What the frame does on its own
 
-- The swims cycle by themselves, in the view's order from a random first swim (again after every view change):
-  each starts from the current minute, lasts `swimSeconds` (60 s), holds a
-  second, fades, rests two seconds, then the next; a swim the current makes impossible plays its
-  fight and drift (`sweptSeconds`) with the caption *too much current · next 4:10pm*. Display never blanks
-  (wake lock + OS settings).
+- In swimmer mode the chosen swim repeats at the frozen departure time: `swimSeconds` (60 s),
+  hold, fade, rest, replay. A swept swim shows its fight and drift (`sweptSeconds`).
+- The forecast uses predicted current, not tide height. Flood is above the baseline, ebb below;
+  the marker follows the displayed time. Unavailable predictions leave gaps.
 - **Hidden presets** — `data/frame.json` in the repo, overridden by `data/frame.local.json` on this frame (not
   in git; survives `install.sh`), then URL flags (`?view=bay&swimmer=0&swimSeconds=30&pace=1:40`). Keys: `view`
   (`cove` | `bay` | `alternate` + `alternateEveryMin`), the three switches, `pace`, `swimSeconds`, `holdSeconds`,
@@ -116,7 +163,7 @@ stays on for debugging). `lsusb` on the Pi lists it as a keyboard.
 - Live data refreshes on the app's own schedule; with no network it keeps animating from the
   bundled year (tides, currents for both views, water-temperature climatology shown with `≈`).
 - The nightly reload (`reloadAt`, 04:00) picks up any app update copied to `/opt/aquatic-park`. The chosen
-  view and switches survive it (`localStorage`).
+  view survives it (`localStorage`).
 - If every live fetch has failed for 3 minutes (`offlineHint`), the top-left corner shows
   *no wi-fi · join "aquatic-park" to set up*.
 
@@ -148,10 +195,10 @@ print-like; the app's dimming works below that ceiling.
 
 ## 6. Assembly notes
 
-- Panel on the mat (active area 344 × 194 mm for a 15.6" 1080p panel), driver board and Pi on
-  the back panel, cooler intake at the bottom slot and exhaust at the top; one 12 V cord (the
-  Pi's 5 V from a buck or a second adapter behind the frame); buttons on a short ribbon through
-  the bottom rail; the light sensor peeks through a 3 mm hole in the bottom rail or a vent slot.
+- Retain the complete monitor by its housing behind the mat; measure the delivered monitor before fabrication.
+  Mount the Pi and sensor on standoffs, provide lower and upper ventilation, and keep the rear panel removable.
+  Separate external USB-C supplies power the Pi and monitor; a finished power strip can combine them at the wall.
+  Mount the encoder under the bottom rail with clearance for its push switch. Expose the light sensor to room light.
 - No glass in front of the matte panel. Matte IPS, not OLED (the HUD is static).
 - Soak test: 48 h closed, `vcgencmd measure_temp` under 70 °C; pull the plug ten times — it must
   always come back to the app with no "restore pages" bar (`--disable-session-crashed-bubble`).
@@ -170,3 +217,20 @@ The daily `tools/pi/refresh-bundles.sh` runs the same validated driver as CI. It
 Run `npm test` and `npm run test:browser` on the development machine. Node packages are test-only and excluded from the Pi installer. The sensor timestamp must be fresh (within 60 seconds); stale files restore full brightness. `holdSeconds` and `fadeSeconds` control both playback and CSS. The Pico owns the eight-second Wi-Fi hold; the Pi resets on key-down with no additional delay.
 
 Physical checks remain required: service startup, sensor readings against room light, single/double/triple/hold gestures, eight-second Wi-Fi reset and reconnection, 30 fps Bay view, ten cold boots, and the 48-hour closed-frame soak. These cannot be certified by desktop browser tests.
+
+## Frame-only transfer to the existing sfbayswims Pi
+
+On the Mac, build into a new directory (the builder refuses to overwrite an existing directory):
+
+```bash
+python3 tools/build_site.py site/sfbayswims-controls --frame-only
+rsync -av site/sfbayswims-controls/ sfbayswims@sfbayswims.local:~/sfbayswims/
+```
+
+This includes only the frame, shared engine, runtime data and Python web server. The separately
+configured `sfbayswims.service` serves `/home/sfbayswims/sfbayswims` on port 8000. Refresh the browser
+after copying; the existing service does not need restarting for static file updates. The legacy
+`tools/pi/install.sh` still targets `/opt/aquatic-park`; do not run it on this installation unchanged.
+The encoder firmware uses CircuitPython's `rotaryio.IncrementalEncoder`:
+https://docs.circuitpython.org/en/latest/shared-bindings/rotaryio/index.html
+Physical encoder direction, detents, rapid turns, gestures, and Pi rendering still require hardware testing.

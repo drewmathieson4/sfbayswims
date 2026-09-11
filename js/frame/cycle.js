@@ -1,11 +1,8 @@
-// The cycle: the view's swims in turn, each integrated at the current minute and scaled to swimSeconds of wall clock; at
-// the finish the swimmer holds, the breadcrumbs and caption fade, the water rests (now) for restSeconds, then the next
-// swim fades in. While a swim plays the picture follows the swimmer (the runtime publishes state.swimAt); the swimmer
-// switched off means no cycle and the water simply shows now. Quiet hours idle the cycle.
+// Repeat the dial-selected preset at the frozen departure time; hold, fade, rest, replay.
 import { state, set, on } from '../engine/state.js';
 
 export function createCycle({ b, presets, overlay, busy = () => false, onLap = null }) {
-  const html = document.documentElement, services = b.services, seeded = b.params?.has('seed');   // ?seed= keeps the start deterministic for tests
+  const html = document.documentElement, services = b.services;
   let running = false, list = [], idx = 0, timer = null, finishing = false, current = null, skipped = 0;
   const routesFor = w => { const all = b.live.routes || [], want = presets.routes?.[w]; return want ? want.map(id => all.find(r => r.id === id)).filter(Boolean) : all; };
   const clear = () => { clearTimeout(timer); timer = null; };
@@ -23,7 +20,7 @@ export function createCycle({ b, presets, overlay, busy = () => false, onLap = n
   function slot() {
     clear();
     if (!running || !state.show.swimmer || quiet() || busy()) { idle(); return; }
-    if (!list.length) { list = routesFor(state.world); idx = seeded ? 0 : Math.floor(Math.random() * list.length); }   // a fresh view starts on a random swim
+    if (!list.length) { list = routesFor(state.world); idx = 0; }   // a fresh view starts on a random swim
     if (!list.length) return;
     if (idx >= list.length) { idx = 0; onLap?.(); if (busy()) return; }
     const r = list[idx];
@@ -43,7 +40,7 @@ export function createCycle({ b, presets, overlay, busy = () => false, onLap = n
     const total = state.physics?.byRoute.get(state.routeId)?.profile.totalSeconds;
     if (total != null && services.swimmer && services.swimmer.tau >= total - 1e-6) { finishing = true; html.classList.add('fading'); }
   });
-  on('swimming', v => { if (!v && running && current) { finishing = false; current = null; idx++; schedule(presets.restSeconds * 1000); } });
+  on('swimming', v => { if (!v && running && current) { finishing = false; current = null; schedule(presets.restSeconds * 1000); } });
   on('windows', w => { if (current && w?.routeId === current.id) overlay.setCaption(current, state.physics?.byRoute.get(current.id), w); });
   on('world', () => { list = []; idx = 0; idle(); });
   on('show', s => { if (!s.swimmer) idle(); });
@@ -54,9 +51,9 @@ export function createCycle({ b, presets, overlay, busy = () => false, onLap = n
     if (running && !state.swimming && !finishing && timer == null && state.show.swimmer && !busy()) schedule(0);
   });
   return {
-    start() { running = true; list = []; idx = 0; schedule(0); },
+    start() { running = true; schedule(0); },
     stop() { running = false; idle(); set({ swimming: false, paused: false }); },
-    next() { current = null; set({ swimming: false, paused: false }); idx++; finishing = false; html.classList.remove('fading'); slot(); },   // test hook: skip to the next swim now
+    next(direction = 1) { current = null; set({ swimming: false, paused: false }); idx = (idx + direction + list.length) % (list.length || 1); finishing = false; html.classList.remove('fading'); slot(); },   // test hook: skip to the next swim now
     get current() { return current; }, get index() { return idx; }, get finishing() { return finishing; },
   };
 }

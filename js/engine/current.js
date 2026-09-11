@@ -112,7 +112,7 @@ export function createField({ geometry, tideRef, currentsRef, config = CONFIG })
   function reference(t) {
     prepare(t); sampleInto(opening.mid.x, opening.mid.y, ctx, tmp);
     const kn = Math.hypot(tmp.x, tmp.y) / KN;
-    return { kn, label: kn < cv.slackKn ? 'SLACK' : (ctx.flood ? 'FLOOD' : 'EBB'), approx: ctx.approx, source: ctx.source, where: '' };
+    return { kn, signedKn: (tmp.x * fx + tmp.y * fy) / KN, label: kn < cv.slackKn ? 'SLACK' : (ctx.flood ? 'FLOOD' : 'EBB'), approx: ctx.approx, source: ctx.source, where: '' };
   }
   return { prepare, sampleInto, sample, reference, ctx, isWater: (x, y) => isWater(geometry, x, y) };
 }

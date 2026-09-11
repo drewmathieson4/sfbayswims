@@ -38,18 +38,26 @@ def runtime_files(root=ROOT):
     return sorted(files)
 
 
-def build(output, root=ROOT):
+def build(output, root=ROOT, frame_only=False):
     files = runtime_files(root)
+    if frame_only:
+        files = [p for p in files if p not in (Path('index.html'), Path('CNAME'))
+                 and not str(p).startswith('js/planner/')
+                 and (p.suffix != '.css' or p.name in ('engine.css', 'frame.css'))]
+        files.append(Path('tools/serve.py'))
     output = Path(output)
     output.mkdir(parents=True, exist_ok=False)  # never delete/overwrite an arbitrary directory
     for path in files:
         destination = output / path; destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(Path(root) / path, destination)
+    if frame_only:
+        (output / 'index.html').write_text('<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=frame/"><title>SF Bay Swims</title><a href="frame/">Open frame</a>\n')
     (output / '.nojekyll').touch()
     return files
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(); parser.add_argument('output', type=Path, nargs='?', default=ROOT / 'site')
-    args = parser.parse_args(); files = build(args.output)
+    parser.add_argument('--frame-only', action='store_true', help='Frame runtime plus local server, without the planner')
+    args = parser.parse_args(); files = build(args.output, frame_only=args.frame_only)
     print(f'Staged {len(files)} runtime files in {args.output}')

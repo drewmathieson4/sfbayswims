@@ -2,7 +2,7 @@
 
 Two apps share one engine: the swim **Planner** at `/` and the picture **Frame** at `/frame/`.
 The Planner estimates swim times for Aquatic Park and San Francisco Bay. The Frame is a wedding gift:
-an aerial photograph with drifting currents, a cycling swimmer, quiet labels, and one button.
+an aerial photograph with drifting currents, quiet labels, an optional swimmer, a button, and an endless dial.
 
 ## Run
 
@@ -29,8 +29,10 @@ Pace must be 0.1–5 m/s. Names are plain text. Saved plans stay in the browser.
 ## Frame
 
 Each swim lasts **60 seconds** by default, then holds for one second, fades for one second, and rests for two.
-The streaks continue between swims. Click toggles swimmer, double-click labels, triple-click streaks,
-and hold 0.6 seconds switches spots. Hardware installation and validation: [README-frame.md](README-frame.md).
+The default is live currents without a swimmer. The dial scrubs time (arrow keys or mouse wheel online).
+Single press restores live time; double press toggles swimmer mode, where the dial chooses a repeating swim.
+Triple press toggles photograph-only mode; hold 0.6 seconds switches spots.
+A small current forecast beneath the conditions shows flood above the baseline and ebb below it. Hardware installation and validation: [README-frame.md](README-frame.md).
 Presets: `data/frame.json`, optional gitignored `data/frame.local.json`, and URL flags.
 
 ## Data and limitations
