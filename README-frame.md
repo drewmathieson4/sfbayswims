@@ -13,9 +13,20 @@
 > - **Not yours:** `index.html`, `css/planner.css`, `js/planner/` — the website.
 > - **Current build decision (September 8, 2026):** use the existing Pi 4 and one detented endless encoder with
 >   a built-in push button, wired directly to Pi GPIO. No Pico or separate button is required. The GPIO input
->   service still needs implementation and hardware testing; the Pico instructions below are an optional alternative.
->   The manually configured frame server and Chromium kiosk have run on the Pi; this does not validate the
->   legacy installer, sensor, or Wi-Fi provisioning. Complete controls, §5 performance, §4 Wi-Fi, then §6 soak testing.
+>   service (`tools/pi/encoder.py`, `sfbayswims-encoder.service`) is installed on the sfbayswims Pi and was verified with
+>   the physical Adafruit 377 on September 18, 2026 (breadboard, T-cobbler): one arrow per detent, clockwise = forward, clean
+>   fast spins, click / double / triple / hold on screen, and the dial after a cold boot with nobody logged in. Open: the
+>   eight-second Wi-Fi reset (needs `wifi_reset.py` + comitup on this Pi) and the permanent soldered harness. The Pico
+>   instructions below are an optional alternative.
+>   On September 20, 2026 the Pi drove the real monitor (Arzopa Z1FC, which wakes by itself after a power cut), and the
+>   VEML7700 was wired (3V3, GND, IO2/SDA1, IO3/SCL1), `sfbayswims-ambient.service` installed by hand, and the frame seen
+>   to dim and brighten. Set on this Pi by hand, and now in the installer: Wi-Fi country US and Wi-Fi power save off
+>   (without them `sfbayswims.local` stops answering). The manually configured frame server and Chromium kiosk (started
+>   from `~/.config/labwc/autostart`) run on the Pi; this does not validate the legacy installer or Wi-Fi provisioning.
+>   Complete §5 performance, §4 Wi-Fi, then §6 soak testing.
+> - **If the frame says "no wi-fi" while the Pi is online,** look at the page's fetch errors before the network. An error
+>   response left unread keeps its request open in Chromium; the sensor poll's 404s once piled up until every fetch failed
+>   with `net::ERR_INSUFFICIENT_RESOURCES`. Every non-OK response is now cancelled, and a browser test covers it.
 > - **Test the frame without hardware** at `http://localhost:8000/frame/` (`python3 tools/serve.py 8000`): click, double-
 >   click, triple-click, hold on the picture or the space bar; `?seed=1&offline=1&persist=0` for a deterministic,
 >   network-free, non-persisting run; `APP.frame.{cycle,button,presets,switchView}` in the console.
@@ -43,30 +54,30 @@ It supersedes the older bare-panel and 12 V power arrangement: use a complete mo
 ## 1. Flash the Pi
 
 1. Raspberry Pi Imager → **Raspberry Pi OS (64-bit) with desktop** (Bookworm or Trixie).
-   In the Imager settings set hostname `aquatic`, user `pi` (any password), **your Wi-Fi** (so the
+   In the Imager settings set hostname `sfbayswims`, user `pi` (any password), **your Wi-Fi** (so the
    first boot is online), locale `America/Los_Angeles`, and enable SSH.
 2. Boot, then copy the repo over and run the installer (it is idempotent — re-run it after any
    app change):
 
    ```
-   rsync -a --exclude venv --exclude .git ./ pi@aquatic.local:~/aquatic-park/
-   ssh pi@aquatic.local 'sudo bash ~/aquatic-park/tools/pi/install.sh && sudo reboot'
+   rsync -a --exclude venv --exclude .git ./ pi@sfbayswims.local:~/sfbayswims/
+   ssh pi@sfbayswims.local 'sudo bash ~/sfbayswims/tools/pi/install.sh && sudo reboot'
    ```
 
-   `install.sh` installs Chromium, copies the app to `/opt/aquatic-park`, sets the timezone,
+   `install.sh` installs Chromium, copies the app to `/opt/sfbayswims`, sets the timezone,
    desktop autologin, disables screen blanking (both `raspi-config` and the labwc `swayidle`
    line), enables I²C, and installs four services:
 
    | Unit | What |
    |---|---|
-   | `aquatic-serve` (system) | `tools/serve.py` — threaded static server on `127.0.0.1:8000` (assets revalidate, the sensor file never caches), serves the light-sensor file as `/ambient.json` |
-   | `aquatic-kiosk` (user) | Chromium `--kiosk --app=http://127.0.0.1:8000/frame/index.html?kiosk=1`, `Restart=always`; started by the compositor's autostart once Wayland is up |
-   | `aquatic-ambient` (system) | `tools/pi/ambient.py` — VEML7700/BH1750 on I²C → `/run/aquatic/ambient.json` every 2 s; exits quietly if there is no sensor |
-   | `aquatic-wifi-reset` (system) | `tools/pi/wifi_reset.py` — `w` key-down after the Pico’s eight-second hold from the "Aquatic Buttons" board (● held 8 s) forgets saved Wi-Fi so the setup hotspot returns; it ignores every other keyboard |
+   | `sfbayswims-serve` (system) | `tools/serve.py` — threaded static server on `127.0.0.1:8000` (assets revalidate, the sensor file never caches), serves the light-sensor file as `/ambient.json` |
+   | `sfbayswims-kiosk` (user) | Chromium `--kiosk --app=http://127.0.0.1:8000/frame/index.html?kiosk=1`, `Restart=always`; started by the compositor's autostart once Wayland is up |
+   | `sfbayswims-ambient` (system) | `tools/pi/ambient.py` — VEML7700/BH1750 on I²C → `/run/sfbayswims/ambient.json` every 2 s; exits quietly if there is no sensor |
+   | `sfbayswims-wifi-reset` (system) | `tools/pi/wifi_reset.py` — `w` key-down after the Pico’s eight-second hold from the "SFBay Buttons" board (● held 8 s) forgets saved Wi-Fi so the setup hotspot returns; it ignores every other keyboard |
 
    The installer never overwrites `data/frame.local.json` — this frame's own presets (§3).
 
-   Plus `/etc/cron.d/aquatic-bundles` (daily at 03:00, validating and refreshing missing, invalid, or due tide/current
+   Plus `/etc/cron.d/sfbayswims-bundles` (daily at 03:00, validating and refreshing missing, invalid, or due tide/current
    bundles; re-running the installer never overwrites bundles the frame generated) and, with
    `comitup` available, the captive-portal hotspot (§4). The installer sources the system labwc
    autostart from the user's, so the desktop session stays intact; only its screen blanker is stopped.
@@ -75,9 +86,9 @@ It supersedes the older bare-panel and 12 V power arrangement: use a complete mo
 3. After the reboot the frame should be full-screen within ~30 s. Check:
 
    ```
-   systemctl status aquatic-serve aquatic-ambient aquatic-wifi-reset
-   systemctl --user status aquatic-kiosk          # as pi, in a desktop session or with XDG_RUNTIME_DIR=/run/user/1000
-   journalctl -u aquatic-ambient -n 20            # "sensor: VEML7700" and no errors
+   systemctl status sfbayswims-serve sfbayswims-ambient sfbayswims-wifi-reset
+   systemctl --user status sfbayswims-kiosk          # as pi, in a desktop session or with XDG_RUNTIME_DIR=/run/user/1000
+   journalctl -u sfbayswims-ambient -n 20            # "sensor: VEML7700" and no errors
    curl -s http://127.0.0.1:8000/ambient.json     # {"lux": …}
    vcgencmd measure_temp
    ```
@@ -93,7 +104,7 @@ Use a panel-mount quadrature encoder with tactile detents, continuous rotation, 
 The encoder and its built-in switch connect to the Pi 4 GPIO header. Buy a matching knob and mounting/wiring
 hardware; omit the Pico, its USB cable, and a separate push button from the recommended parts.
 
-Drew selected black metal for the knob. Recommended control parts (September 8, 2026; not yet ordered):
+Drew selected black metal for the knob. Control parts (ordered through DigiKey; arrived September 18, 2026):
 
 - [Adafruit Rotary Encoder + Extras, #377](https://www.adafruit.com/product/377): $4.50,
   continuous rotation with tactile detents and a built-in push switch; 6 mm D shaft.
@@ -118,11 +129,34 @@ The shaft and bore are compatible; final mounting still needs measurement. Leave
 for the push switch to travel, and use a recessed mount or thin bracket if the wooden rail is too thick for
 the encoder's threaded bushing. Wiring and mounting materials are additional to these two control parts.
 
-A small background service on the Pi will read rotation and switch press/release events and pass them to the
-frame's existing controls. This service is planned, not implemented or installed. Choose the exact encoder before
-finalizing GPIO assignments and wiring; preserve pins needed by the ambient light sensor. Validate detents,
-direction, fast turns, all button gestures, and automatic startup with the physical control. The legacy eight-second
-Wi-Fi reset below currently depends on Pico firmware and also needs adaptation for this build.
+`tools/pi/encoder.py` (root, `sfbayswims-encoder.service`) reads the encoder and switch with gpiozero and presents
+them as a uinput keyboard named "SFBay Buttons" — the Pico's protocol exactly: a detent is a left/right arrow tap,
+`b` is held while the knob is pressed, `w` joins it after eight seconds. The browser (`js/frame/button.js`,
+`controls.js`) and `wifi_reset.py` therefore work unchanged. It needs `python3-gpiozero`, `python3-lgpio` (both on
+Raspberry Pi OS already) and `python3-evdev`.
+
+| Part | Leg | Pi header |
+|---|---|---|
+| Encoder (three-leg side) | A | GPIO17, pin 11 |
+| | C — the middle leg | GND, pin 9 |
+| | B | GPIO27, pin 13 |
+| Switch (two-leg side) | either leg | GPIO22, pin 15 |
+| | the other leg | GND, pin 14 |
+| Light sensor (QT cable) | red / black | 3V3 pin 1 / GND pin 6 |
+| | blue SDA / yellow SCL | GPIO2 pin 3 / GPIO3 pin 5 |
+
+The pull-ups are the Pi's internal ones: the encoder takes no 3V3 and no resistors. Wire with the Pi powered off.
+Other pins: `--a --b --sw`. Bench test over SSH before the service is installed — no root, no keyboard created:
+
+```
+python3 tools/pi/encoder.py --dry      # turn: RIGHT/LEFT down/up per detent · press: B down … B up · hold 8 s: W down
+```
+
+One detent must print exactly one arrow. If clockwise prints LEFT, swap the A and B wires or add `--reverse` to the
+unit's `ExecStart`. Then, on the screen: each detent steps 5 minutes, a sustained spin 15 then 60; click, double, triple and
+hold as in the table below; after a reboot the dial works without anyone logging in over SSH. Verified with the
+physical part on September 18, 2026: detent/step agreement (no `--reverse` needed with A on GPIO17), fast turns, and
+every gesture through labwc to Chromium. Still unverified: the eight-second reset end to end.
 
 ### Optional alternative: Pico as a USB keyboard
 
@@ -140,10 +174,13 @@ update, not a reflash:
 | hold 8 s | | forget Wi-Fi (`w` → `wifi_reset.py`; the hotspot returns) |
 
 Only the view survives the nightly reload (`localStorage`; `persistSwitches` in the presets).
-The frame starts in its configured default mode. Slow dial turns step 5 minutes, faster turns 15 or 60 minutes.
+The frame starts in its configured default mode. Each detent steps 5 minutes, flick or not; only a sustained fast spin one way
+accelerates — 15 minutes after half a turn (12 detents under 100 ms apart), 60 after a turn and a half (`dial` in the presets:
+`fastMs`, `graceMs`, and `steps` as `[after-this-many-fast-detents, minutes]` pairs). Letting go to re-grip keeps the count for
+`graceMs` (600 ms), so spin–re-grip–spin keeps building; a longer pause or reversing drops back to 5, and a slow detent is always 5.
 In swimmer mode each detent changes one preset; in photograph mode the dial does nothing.
 
-`boot.py` names the board "Aquatic Buttons" and hides the CIRCUITPY drive so the Pi only ever sees
+`boot.py` names the board "SFBay Buttons" and hides the CIRCUITPY drive so the Pi only ever sees
 a keyboard; hold ● while plugging the Pico in to get the drive back for editing (the serial console
 stays on for debugging). `lsusb` on the Pi lists it as a keyboard.
 
@@ -159,18 +196,18 @@ stays on for debugging). `lsusb` on the Pi lists it as a keyboard.
   `fadeSeconds`, `restSeconds`, `sweptSeconds`, `skipInfeasible`, `streaksFollowSwimmer`, `routes` (per view, an
   id list or `null` = all), `crumbsPerSwim` (per view; 0 = none, the default), `icon` (`glyph` | `beacon`), `streakAlpha`, `labelScrim` (the vignette behind the top labels, 0–1), `maxFps`,
   `quietHours` (`{ "from": "23:00", "to": "06:00", "mode": "still" | "dark" }`), `persistSwitches`,
-  `resetDaily`, `ambient`, `reloadAt`.
+  `resetDaily`, `ambient`, `reloadAt`, `dial`.
 - Live data refreshes on the app's own schedule; with no network it keeps animating from the
   bundled year (tides, currents for both views, water-temperature climatology shown with `≈`).
-- The nightly reload (`reloadAt`, 04:00) picks up any app update copied to `/opt/aquatic-park`. The chosen
+- The nightly reload (`reloadAt`, 04:00) picks up any app update copied to `/opt/sfbayswims`. The chosen
   view survives it (`localStorage`).
 - If every live fetch has failed for 3 minutes (`offlineHint`), the top-left corner shows
-  *no wi-fi · join "aquatic-park" to set up*.
+  *no wi-fi · join "sfbayswims" to set up*.
 
 ## 4. Wi-Fi for someone else's house
 
 With **comitup** installed, a Pi that can't reach a known network raises a hotspot named
-**aquatic-park** (password `swimswim`, set in `tools/pi/comitup.conf`). Joining it from a phone opens a
+**sfbayswims** (password `swimswim`, set in `tools/pi/comitup.conf`). Joining it from a phone opens a
 captive page listing nearby networks; pick the
 home Wi-Fi, type the password, and within a minute the frame is online (and the hotspot is
 gone). Holding ● for 8 s forgets all saved networks and brings the hotspot back — for a move or
@@ -206,8 +243,8 @@ print-like; the app's dimming works below that ceiling.
 ## 7. Updating the app later
 
 ```
-rsync -a --exclude venv --exclude .git ./ pi@aquatic.local:~/aquatic-park/
-ssh pi@aquatic.local 'sudo bash ~/aquatic-park/tools/pi/install.sh'    # re-syncs /opt and restarts services
+rsync -a --exclude venv --exclude .git ./ pi@sfbayswims.local:~/sfbayswims/
+ssh pi@sfbayswims.local 'sudo bash ~/sfbayswims/tools/pi/install.sh'    # re-syncs /opt and restarts services
 ```
 
 The daily `tools/pi/refresh-bundles.sh` runs the same validated driver as CI. It fetches only missing/invalid or due bundles. For manual regeneration see DATA.md.
@@ -230,7 +267,18 @@ rsync -av site/sfbayswims-controls/ sfbayswims@sfbayswims.local:~/sfbayswims/
 This includes only the frame, shared engine, runtime data and Python web server. The separately
 configured `sfbayswims.service` serves `/home/sfbayswims/sfbayswims` on port 8000. Refresh the browser
 after copying; the existing service does not need restarting for static file updates. The legacy
-`tools/pi/install.sh` still targets `/opt/aquatic-park`; do not run it on this installation unchanged.
+`tools/pi/install.sh` still targets `/opt/sfbayswims`; do not run it on this installation unchanged.
+
+The package carries the GPIO dial service (§2). Install it once on this Pi, after the `--dry` bench test:
+
+```bash
+sudo apt install -y python3-evdev python3-gpiozero python3-lgpio
+sed 's|@APP@|/home/sfbayswims/sfbayswims|' ~/sfbayswims/tools/pi/systemd/sfbayswims-encoder.service | sudo tee /etc/systemd/system/sfbayswims-encoder.service
+sudo systemctl daemon-reload && sudo systemctl enable --now sfbayswims-encoder
+journalctl -u sfbayswims-encoder -n 5      # "dial on GPIO17/GPIO27, switch on GPIO22"
+```
+
+After a later `rsync` of `encoder.py`: `sudo systemctl restart sfbayswims-encoder`.
 The encoder firmware uses CircuitPython's `rotaryio.IncrementalEncoder`:
 https://docs.circuitpython.org/en/latest/shared-bindings/rotaryio/index.html
 Physical encoder direction, detents, rapid turns, gestures, and Pi rendering still require hardware testing.

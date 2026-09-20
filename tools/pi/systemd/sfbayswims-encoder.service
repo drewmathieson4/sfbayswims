@@ -1,0 +1,10 @@
+[Unit]
+Description=SF Bay Swims: the GPIO dial and its push switch, presented as the "SFBay Buttons" keyboard
+
+[Service]
+ExecStart=/usr/bin/python3 @APP@/tools/pi/encoder.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

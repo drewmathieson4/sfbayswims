@@ -1,5 +1,5 @@
 [Unit]
-Description=Aquatic Park kiosk browser
+Description=SF Bay Swims kiosk browser
 
 [Service]
 Environment=XDG_RUNTIME_DIR=/run/user/@UID@ WAYLAND_DISPLAY=wayland-0

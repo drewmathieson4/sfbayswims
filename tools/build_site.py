@@ -44,7 +44,8 @@ def build(output, root=ROOT, frame_only=False):
         files = [p for p in files if p not in (Path('index.html'), Path('CNAME'))
                  and not str(p).startswith('js/planner/')
                  and (p.suffix != '.css' or p.name in ('engine.css', 'frame.css'))]
-        files.append(Path('tools/serve.py'))
+        files += [Path('tools/serve.py'), Path('tools/pi/encoder.py'), Path('tools/pi/systemd/sfbayswims-encoder.service'),
+                  Path('tools/pi/ambient.py'), Path('tools/pi/systemd/sfbayswims-ambient.service')]
     output = Path(output)
     output.mkdir(parents=True, exist_ok=False)  # never delete/overwrite an arbitrary directory
     for path in files:

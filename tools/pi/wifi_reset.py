@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Forget every saved Wi-Fi network when the button board sends `w` key-down after ● is held 8 s, so comitup raises
-the "aquatic-park" setup hotspot again. Root (systemd). Watches only the keyboard named "Aquatic Buttons"."""
+the "sfbayswims" setup hotspot again. Root (systemd). Watches only the keyboard named "SFBay Buttons"."""
 import subprocess, time, sys
 try: import evdev
 except ImportError: print("python3-evdev missing — Wi-Fi reset disabled"); sys.exit(0)
@@ -9,7 +9,7 @@ def find_board():
     board = None
     for path in evdev.list_devices():
         d = evdev.InputDevice(path)
-        if board is None and "aquatic buttons" in d.name.lower(): board = d
+        if board is None and "sfbay buttons" in d.name.lower(): board = d
         else: d.close()
     return board
 

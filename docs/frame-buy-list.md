@@ -2,7 +2,18 @@
 
 Assumptions: 15.6-inch landscape display, US wall outlets, existing Raspberry Pi 4 and SD card.
 Drew selected a black metal knob, tactile detents and a built-in push switch, connected directly to Pi GPIO.
-He has a breadboard and jumper wires and can borrow a friend's soldering tools. No items below are recorded as ordered.
+He has a breadboard and jumper wires and can borrow a friend's soldering tools.
+
+**Update, September 18, 2026:** Drew placed the DigiKey order and bought an **Arzopa** portable monitor instead of the
+ViewSonic VA1655 below; everything has arrived. The Arzopa's model, resolution, ports, included cables, dimensions and
+power behavior are not recorded here yet — the VA1655 figures in "Monitor order" do not apply to it. Which conditional
+additions were bought is also unrecorded.
+
+**HDMI path, September 18:** the FIT0664 micro-HDMI adapter was dead on arrival — no picture into a second, known-good
+monitor, while the Pi drove that monitor through a one-piece micro-HDMI-to-HDMI cable, and the Arzopa with its own
+mini-HDMI cable worked from a Mac's HDMI port. Symptom on the Pi: `connected`, empty EDID, fallback `1024x768`.
+Replace the adapter and cable with a single **micro-HDMI to mini-HDMI cable** (short, flexible); the video path becomes
+Pi micro-HDMI → that cable → monitor. The Pi-to-Arzopa pairing itself is still untested until that cable arrives.
 The existing Pi power supply's label and the final screen size still need confirmation.
 
 ## One DigiKey order

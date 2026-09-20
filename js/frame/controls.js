@@ -1,10 +1,10 @@
 // Endless encoder: arrow keys over USB; mouse wheel provides the same controls during setup.
 import { state, set, effectiveTime } from '../engine/state.js';
 
-export function createControls({ cycle, busy = () => false }) {
+export function createControls({ cycle, busy = () => false, dial }) {
   const html = document.documentElement;
   set({ frameTimeBrowsing: false });
-  let photograph = false, savedShow = null, lastTurn = -Infinity;
+  let photograph = false, savedShow = null, lastTurn = -Infinity, lastFast = -Infinity, lastDirection = 0, streak = 0;
   function leavePoster() {
     if (!photograph) return;
     photograph = false; html.classList.remove('photograph');
@@ -34,8 +34,13 @@ export function createControls({ cycle, busy = () => false }) {
     direction = Math.sign(direction);
     if (photograph) return; // the photograph stays still until a button gesture changes mode
     if (state.show.swimmer) { cycle.next(direction); return; }
-    const t = performance.now(), gap = t - lastTurn; lastTurn = t;
-    const minutes = gap < 70 ? 60 : gap < 160 ? 15 : 5;
+    // A flick stays in the smallest step; only a sustained spin one way (detents closer than fastMs) earns the larger ones.
+    // Letting go to re-grip keeps the spin's streak for graceMs; a longer pause, or reversing, starts over. A slow detent is always the smallest step.
+    const t = performance.now(), fast = t - lastTurn < dial.fastMs && direction === lastDirection;
+    if (direction !== lastDirection || t - lastFast >= dial.graceMs) streak = 0;
+    if (fast) { streak++; lastFast = t; }
+    lastTurn = t; lastDirection = direction;
+    const minutes = fast ? dial.steps.reduce((m, [after, step]) => streak >= after ? step : m, dial.steps[0][1]) : dial.steps[0][1];
     set({ frameTimeBrowsing: true, selectedTime: effectiveTime() + direction * minutes * 60000 });
   }
   window.addEventListener('keydown', e => {

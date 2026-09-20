@@ -3,7 +3,7 @@ import { LAND, BAY } from './geometry.js';
 
 export async function loadMask(url) {
   const r = await fetch(url, { cache: 'no-cache' });
-  if (!r.ok) throw new Error(`${url}: ${r.status}`);
+  if (!r.ok) { r.body?.cancel(); throw new Error(`${url}: ${r.status}`); }
   return createImageBitmap(await r.blob());
 }
 export function buildMaskGeometry(bitmap, meta, proj) {

@@ -31,7 +31,7 @@ def http_range(url, a, b, tries=4):
 
 def coops(**params):
     """A CO-OPS datagetter call (Pacific local time, English units); raises on the API's own error body."""
-    p = {"time_zone": "lst_ldt", "units": "english", "format": "json", "application": "aquaticpark", **params}
+    p = {"time_zone": "lst_ldt", "units": "english", "format": "json", "application": "sfbayswims", **params}
     j = get_json(f"{COOPS}?{urllib.parse.urlencode(p)}")
     if "error" in j: raise RuntimeError(j["error"].get("message", j["error"]))
     return j

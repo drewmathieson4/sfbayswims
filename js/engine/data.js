@@ -33,10 +33,10 @@ export function fmtDate(t) { return new Intl.DateTimeFormat('en-US', { timeZone:
 // ---- fetch with a timeout ----
 export async function getJSON(url, { timeoutMs = CONFIG.refresh.fetchTimeoutMs, headers } = {}) {
   const ctl = new AbortController(), id = setTimeout(() => ctl.abort(), timeoutMs);
-  try { const r = await fetch(url, { signal: ctl.signal, headers }); if (!r.ok) throw new Error(`HTTP ${r.status} ${url}`); return await r.json(); }
+  try { const r = await fetch(url, { signal: ctl.signal, headers }); if (!r.ok) { r.body?.cancel(); throw new Error(`HTTP ${r.status} ${url}`); } return await r.json(); }   // cancel: an unread body keeps its request open
   finally { clearTimeout(id); }
 }
-const coopsURL = params => `${COOPS}?${new URLSearchParams({ time_zone: 'lst_ldt', units: 'english', format: 'json', application: 'aquaticpark', ...params })}`;
+const coopsURL = params => `${COOPS}?${new URLSearchParams({ time_zone: 'lst_ldt', units: 'english', format: 'json', application: 'sfbayswims', ...params })}`;
 
 // ---- localStorage cache (best effort) ----
 export function cacheGet(key) { try { const s = localStorage.getItem('ap.' + key); return s ? JSON.parse(s) : null; } catch { return null; } }
@@ -104,7 +104,7 @@ export async function fetchWind() {
 
 // ---- offline bundles (data/*.json) ----
 export async function loadBundle(name) {
-  try { const r = await fetch(dataUrl(name), { cache: 'no-cache' }); return r.ok ? await r.json() : null; } catch { return null; }
+  try { const r = await fetch(dataUrl(name), { cache: 'no-cache' }); if (!r.ok) { r.body?.cancel(); return null; } return await r.json(); } catch { return null; }
 }
 export function climatologyTemp(clim, t) {
   if (!clim?.doyMeanF) return null;

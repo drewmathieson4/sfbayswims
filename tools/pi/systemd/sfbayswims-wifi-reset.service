@@ -1,5 +1,5 @@
 [Unit]
-Description=Aquatic Park: eight-second button hold forgets Wi-Fi (the setup hotspot returns)
+Description=SF Bay Swims: eight-second button hold forgets Wi-Fi (the setup hotspot returns)
 After=NetworkManager.service
 
 [Service]

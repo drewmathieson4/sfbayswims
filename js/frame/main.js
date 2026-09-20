@@ -55,7 +55,7 @@ async function switchView() {
 }
 const cycle = createCycle({ b, presets, overlay, busy: () => busy,
   onLap: () => { if (presets.view === 'alternate' && presets.alternateEveryMin > 0 && performance.now() - lastSwitch > presets.alternateEveryMin * 60000) switchView(); } });
-const controls = createControls({ cycle, busy: () => busy });
+const controls = createControls({ cycle, busy: () => busy, dial: presets.dial });
 const button = createButton({ busy: () => busy, onClick: controls.now, onDouble: controls.swimmer, onTriple: controls.poster, onHold: switchView });
 on('show', () => applyShow());
 on('world', w => saveSwitches(presets, { world: w }));

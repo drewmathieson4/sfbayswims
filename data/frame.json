@@ -22,5 +22,6 @@
  "persistSwitches": true,
  "resetDaily": false,
  "ambient": { "luxDark": 3, "luxBright": 300, "minBrightness": 0.3, "warmth": 0.25 },
- "reloadAt": "04:00"
+ "reloadAt": "04:00",
+ "dial": { "fastMs": 100, "graceMs": 600, "steps": [[0, 5], [12, 15], [36, 60]] }
 }

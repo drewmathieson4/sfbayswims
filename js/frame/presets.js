@@ -8,9 +8,10 @@ const DEFAULTS = {
   swimSeconds: 60, holdSeconds: 1, fadeSeconds: 1, restSeconds: 2, sweptSeconds: 6, skipInfeasible: false, streaksFollowSwimmer: true,
   routes: {}, crumbsPerSwim: {}, icon: 'glyph', streakAlpha: 0.18, labelScrim: 0.45, maxFps: 30,
   quietHours: null, persistSwitches: true, resetDaily: false, ambient: {}, reloadAt: '04:00',
+  dial: { fastMs: 100, graceMs: 600, steps: [[0, 5], [12, 15], [36, 60]] },   // minutes per detent: 5, then 15 after 12 fast detents (half a turn), 60 after 36; a re-grip under graceMs keeps the count
 };
 const merge = (a, b) => { for (const [k, v] of Object.entries(b || {})) if (!['__proto__', 'constructor', 'prototype'].includes(k)) a[k] = v && typeof v === 'object' && !Array.isArray(v) && a[k] && typeof a[k] === 'object' ? merge(a[k], v) : v; return a; };
-const getJSON = async f => { try { const r = await fetch(dataUrl(f), { cache: 'no-cache' }); return r.ok ? await r.json() : null; } catch { return null; } };
+const getJSON = async f => { try { const r = await fetch(dataUrl(f), { cache: 'no-cache' }); if (!r.ok) { r.body?.cancel(); return null; } return await r.json(); } catch { return null; } };
 
 export async function loadPresets(params) {
   const p = merge(merge(structuredClone(DEFAULTS), await getJSON('frame.json')), await getJSON('frame.local.json'));
@@ -26,6 +27,8 @@ export async function loadPresets(params) {
   for (const key of ['swimmer', 'overlay', 'streaks', 'skipInfeasible', 'streaksFollowSwimmer', 'persistSwitches', 'resetDaily']) if (typeof p[key] !== 'boolean') p[key] = DEFAULTS[key];
   if (!['glyph', 'beacon'].includes(p.icon)) p.icon = DEFAULTS.icon;
   for (const key of ['routes', 'crumbsPerSwim', 'ambient']) if (!p[key] || typeof p[key] !== 'object' || Array.isArray(p[key])) p[key] = {};
+  const stepsOk = s => Array.isArray(s) && s.length > 0 && s[0]?.[0] === 0 && s.every(x => Array.isArray(x) && Number.isInteger(x[0]) && x[0] >= 0 && x[1] > 0 && x[1] <= 720);
+  if (!p.dial || typeof p.dial !== 'object' || !(p.dial.fastMs > 0) || !(p.dial.graceMs >= 0) || !stepsOk(p.dial.steps)) p.dial = structuredClone(DEFAULTS.dial);
   for (const [key, value] of Object.entries(p.routes)) if (value !== null && (!Array.isArray(value) || !value.every(id => typeof id === 'string'))) delete p.routes[key];
   for (const [key, value] of Object.entries(p.crumbsPerSwim)) if (!Number.isInteger(value) || value < 0 || value > 1000) delete p.crumbsPerSwim[key];
   return p;

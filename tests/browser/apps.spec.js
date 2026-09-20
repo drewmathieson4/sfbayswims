@@ -86,6 +86,16 @@ test('frame uses preset fade timings and ignores stale sensor data', async ({ pa
   expect(await page.locator('#dim').evaluate(el => Number(el.style.opacity))).toBe(0);
 });
 
+test('frame without a light sensor closes every 404 poll', async ({ page }) => {   // left open, they pile up until Chromium refuses all fetches
+  await page.route('**/data/frame.local.json', route => route.fulfill({ json: { ambient: { pollS: 0.1 } } }));
+  let started = 0, closed = 0; const isPoll = r => r.url().includes('/ambient.json');
+  page.on('request', r => { if (isPoll(r)) started++; });
+  page.on('requestfinished', r => { if (isPoll(r)) closed++; }); page.on('requestfailed', r => { if (isPoll(r)) closed++; });
+  await page.goto(`/frame/?${fixed}&persist=0&kiosk=1`); await ready(page);
+  await expect.poll(() => started).toBeGreaterThan(8);
+  await expect.poll(() => started - closed).toBeLessThan(3);
+});
+
 test('Pages subdirectory loads both products and runtime assets only', async ({ page }) => {
   const bad = []; page.on('response', r => { if (r.status() >= 400 && !r.url().endsWith('frame.local.json')) bad.push(r.url()); });
   for (const path of ['/sfbayswims/', '/sfbayswims/frame/']) {
@@ -216,6 +226,39 @@ test('frame wave keeps slack current and matches the conditions width', async ({
   }
 });
 
+
+test('a flick of the dial stays in five-minute steps; only a sustained spin accelerates', async ({ page }) => {
+  await page.goto(`/frame/?${fixed}&persist=0`); await ready(page);
+  const labels = await page.evaluate(async () => {
+    const { set } = await import('/js/engine/state.js');
+    const at = Date.parse('2026-09-08T12:00:00-07:00');
+    set({ now: at, selectedTime: at });
+    const offset = () => document.querySelector('#clock').textContent.split(' · ').pop();
+    for (let i = 0; i < 5; i++) APP.frame.controls.turn(1);
+    const flick = offset();
+    for (let i = 0; i < 8; i++) APP.frame.controls.turn(1);      // 13 in a row: the thirteenth is the first 15-minute step
+    const spin = offset();
+    APP.frame.controls.turn(-1);                                  // reversing starts over at five minutes
+    return { flick, spin, back: offset() };
+  });
+  expect(labels).toEqual({ flick: '+25M', spin: '+1H 15M', back: '+1H 10M' });
+});
+
+test('re-gripping mid-spin keeps the dial\'s speed; a pause drops back to five minutes', async ({ page }) => {
+  await page.goto(`/frame/?${fixed}&persist=0`); await ready(page);
+  const labels = await page.evaluate(async () => {
+    const { set } = await import('/js/engine/state.js');
+    const at = Date.parse('2026-09-08T12:00:00-07:00');
+    set({ now: at, selectedTime: at });
+    const offset = () => document.querySelector('#clock').textContent.split(' · ').pop();
+    let clock = 1000; performance.now = () => clock;
+    const turn = afterMs => { clock += afterMs; APP.frame.controls.turn(1); return offset(); };
+    for (let i = 0; i < 12; i++) turn(50);
+    return { spin: turn(50), regrip: turn(400), resumed: turn(50), paused: turn(2000), restarted: turn(50) };
+  });
+  // 12 × 5 + 15 · the re-grip's own slow detent is 5 · straight back to 15 · after a real pause: 5, and 5 again
+  expect(labels).toEqual({ spin: '+1H 15M', regrip: '+1H 20M', resumed: '+1H 35M', paused: '+1H 40M', restarted: '+1H 45M' });
+});
 
 test('frame date crosses midnight and dial offset clears on return to now', async ({ page }) => {
   await page.goto(`/frame/?${fixed}&persist=0`); await ready(page);

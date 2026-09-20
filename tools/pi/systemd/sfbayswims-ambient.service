@@ -1,0 +1,15 @@
+[Unit]
+Description=SF Bay Swims ambient light sensor → /run/sfbayswims/ambient.json
+After=multi-user.target
+
+[Service]
+User=@USER@
+RuntimeDirectory=sfbayswims
+RuntimeDirectoryMode=0755
+RuntimeDirectoryPreserve=yes
+ExecStart=/usr/bin/python3 @APP@/tools/pi/ambient.py --out /run/sfbayswims/ambient.json
+Restart=on-failure
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target

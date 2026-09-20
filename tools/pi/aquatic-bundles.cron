@@ -1,2 +1,0 @@
-# Daily validation; fetch only missing/invalid data or upcoming coverage
-0 3 * * * @USER@ /bin/bash @APP@/tools/pi/refresh-bundles.sh >> /tmp/aquatic-bundles.log 2>&1

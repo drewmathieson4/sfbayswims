@@ -19,7 +19,7 @@ const optionalJSON = url => loadJSON(url).catch(() => null);
 
 export async function loadJSON(url) {
   const r = await fetch(url, { cache: 'no-cache' });
-  if (!r.ok) throw new Error(`${url}: ${r.status}`);
+  if (!r.ok) { r.body?.cancel(); throw new Error(`${url}: ${r.status}`); }
   return r.json();
 }
 export function loadIndex() { return loadJSON(dataUrl('worlds/index.json')); }

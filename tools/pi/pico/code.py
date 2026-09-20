@@ -1,5 +1,5 @@
-# Aquatic Park button board — Raspberry Pi Pico / Pico 2 with CircuitPython + adafruit_hid. The Pi sees a plain USB
-# keyboard named "Aquatic Buttons" (boot.py), so the frame needs no driver or OS config. The gestures (click, double,
+# SF Bay Swims button board — Raspberry Pi Pico / Pico 2 with CircuitPython + adafruit_hid. The Pi sees a plain USB
+# keyboard named "SFBay Buttons" (boot.py), so the frame needs no driver or OS config. The gestures (click, double,
 # triple, hold) are decoded in the browser (js/frame/button.js); this board only reports the button's state.
 #
 #   ● GP4 — momentary button to GND (internal pull-up)

@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Room light → /run/aquatic/ambient.json {"lux": …, "t": …} every 2 s (smoothed), read by js/ambient.js.
+"""Room light → /run/sfbayswims/ambient.json {"lux": …, "t": …} every 2 s (smoothed), read by js/ambient.js.
 
 Sensor on I²C-1: VEML7700 (0x10) or BH1750 (0x23). Without a sensor it exits quietly (the app then stays at full
-brightness). Options: --out PATH (default /run/aquatic/ambient.json), --print.
+brightness). Options: --out PATH (default /run/sfbayswims/ambient.json), --print.
 """
 import json, os, sys, time
 
 def opt(name, default=None):
     a = sys.argv[1:]; return a[a.index(name) + 1] if name in a else default
-OUT = opt("--out", "/run/aquatic/ambient.json"); PRINT = "--print" in sys.argv
+OUT = opt("--out", "/run/sfbayswims/ambient.json"); PRINT = "--print" in sys.argv
 
 class VEML7700:
     ADDR = 0x10

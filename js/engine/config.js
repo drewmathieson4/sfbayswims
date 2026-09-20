@@ -67,7 +67,7 @@ export const CONFIG = {
   // kiosk only: follow the room light (tools/pi/ambient.py writes lux; tools/serve.py serves it). A black overlay from full
   // brightness at luxBright down to minBrightness at luxDark (log scale), plus a warm tint in the dark.
   ambient: { enabled: true, url: '/ambient.json', pollS: 5, luxDark: 3, luxBright: 300, minBrightness: 0.3, warmth: 0.25 },
-  offlineHint: { afterS: 180, text: 'no wi-fi · join "aquatic-park" to set up' },   // kiosk only, after that long without live data
+  offlineHint: { afterS: 180, text: 'no wi-fi · join "sfbayswims" to set up' },   // kiosk only, after that long without live data
 
   photo: { filter: 'brightness(1) contrast(1.2) saturate(1)' },      // CSS filter on the aerial (--photo-filter)
   route: { dotR: 3.5, followOffsetM: 15, keepRightM: 4, turnRadiusM: 20 },   // dotR = swimmer unit size in metres (the Bay uses 30); turnRadiusM smooths the path

@@ -1,5 +1,5 @@
 // Kiosk only: follow the room light. tools/pi/ambient.py samples a VEML7700 and writes {lux, t} to
-// /run/aquatic/ambient.json; tools/serve.py serves it as /ambient.json. We map lux → a brightness level
+// /run/sfbayswims/ambient.json; tools/serve.py serves it as /ambient.json. We map lux → a brightness level
 // (log scale between luxDark and luxBright) and ease a black overlay (+ a faint warm tint) toward it, so
 // the frame dims like a print as the room darkens. If the sensor goes quiet we return to full brightness.
 import { CONFIG } from '../engine/config.js';
@@ -15,7 +15,8 @@ export function startAmbient() {
   };
   async function poll() {
     try {
-      const r = await fetch(c.url, { cache: 'no-store' }); if (!r.ok) throw new Error(r.status);
+      const r = await fetch(c.url, { cache: 'no-store' });
+      if (!r.ok) { r.body?.cancel(); throw new Error(r.status); }   // an unread body keeps its request open; with no sensor that's a 404 every poll, until Chromium refuses every fetch
       const j = await r.json();
       if (!Number.isFinite(j.lux) || j.lux < 0 || !Number.isFinite(j.t) || Date.now() - j.t > 60000 || j.t > Date.now() + 5000) throw new Error('stale sensor reading');
       lastSeen = j.t; target = luxToLevel(j.lux);

@@ -1,5 +1,5 @@
 [Unit]
-Description=Aquatic Park static server (127.0.0.1:8000)
+Description=SF Bay Swims static server (127.0.0.1:8000)
 After=network.target
 
 [Service]
